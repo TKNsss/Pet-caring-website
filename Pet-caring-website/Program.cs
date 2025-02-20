@@ -9,7 +9,7 @@ namespace Pet_caring_website
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // get connection string from appsettings.json
+            // get connection string from appsettings.Development.json
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
             // Add services to the container.
