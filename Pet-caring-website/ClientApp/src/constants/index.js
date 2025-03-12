@@ -4,6 +4,8 @@ import { MdGroup } from "react-icons/md";
 import { FaPhoneAlt } from "react-icons/fa";
 import { FaUser, FaCog, FaQuestionCircle, FaSignOutAlt } from "react-icons/fa";
 
+import { logo, cryIcon, loginImg, catLoginImg } from "../assets";
+
 export const navLinks = [
   { id: "Home", label: "Home", href: "/", icon: TiHome },
   {
@@ -46,5 +48,7 @@ export const userDropdownLinks = [
   { label: "My Profile", href: "/profile", icon: FaUser },
   { label: "Settings", href: "/setting", icon: FaCog },
   { label: "Help", href: "/help", icon: FaQuestionCircle },
-  { label: "Logout", href: "/logout", icon: FaSignOutAlt },
+  { label: "Sign out", href: "/logout", icon: FaSignOutAlt },
 ];
+
+export { logo, cryIcon, loginImg, catLoginImg };

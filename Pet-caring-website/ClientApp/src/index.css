@@ -11,7 +11,7 @@
   /* colors */
   --color-primary: #5a3bb3;
   --color-secondary: #e4813a;
-  --color-third: #7759CC;
+  --color-third: #7759cc;
   --color-hoverPurple: #8954cc;
   --color-txt-1: #3e3218;
   --color-txt-2: #33363f;
@@ -29,22 +29,22 @@
   p,
   span,
   li {
-    @apply text-lg
+    @apply text-lg;
   }
 
   h1,
   h2 {
-    @apply font-chewy font-thin text-third
+    @apply font-chewy text-third font-thin;
   }
 
   h3 {
-    @apply font-Poppins
+    @apply font-Poppins;
   }
 }
 
 @layer components {
   .web-container {
-    @apply mx-auto w-full; 
+    @apply mx-auto w-full;
 
     @apply [@media(width>=40rem)]:max-w-full; /* 640px */
     @apply [@media(width>=48rem)]:max-w-[51.25rem]; /* 768px */
@@ -54,6 +54,10 @@
   }
 
   .search-bar {
-    @apply focus:border-txt-2 w-0 rounded-full py-1 pr-3 pl-7 text-lg transition-all duration-300 group-hover:w-full group-hover:border focus:w-full focus:border focus:outline-none @2xl:group-hover:w-[20rem] @2xl:focus:w-[20rem] @3xl:w-[350px] @3xl:border @3xl:group-hover:w-[350px] @3xl:focus:w-[350px];
+    @apply focus:border-txt-2 w-0 rounded-full py-1 pr-3 pl-7 text-base transition-all duration-300 group-hover:w-full group-hover:border focus:w-full focus:border focus:outline-none @2xl:group-hover:w-[22rem] @2xl:focus:w-[22rem] @3xl:w-[320px] @3xl:border @3xl:group-hover:w-[320px] @3xl:focus:w-[320px];
+  }
+
+  .log-input {
+    @apply focus:ring-third mt-2 w-full rounded-lg border p-2 focus:ring-2 focus:outline-none;
   }
 }

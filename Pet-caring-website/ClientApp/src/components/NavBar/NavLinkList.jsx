@@ -4,6 +4,7 @@ import { hoveredTransition, hoveredEffect } from "../../utils/motion";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { FiLogIn } from "react-icons/fi";
 import SearchBar from "./SearchBar/SearchBar";
+import UserDropdown from "./UserDropdown/UserDropdown";
 import { Link } from "react-router-dom";
 
 const SubLinkList = ({ id, links, isOpen }) => {
@@ -14,16 +15,18 @@ const SubLinkList = ({ id, links, isOpen }) => {
       {links.map((subLink) => (
         <li
           key={subLink.label}
-          className="bg-lavender text-txt-2 hover:bg-darkYellow @3xl:border-navBorder @3xl:hover:text-mdYellow @3xl:hover:bg-navSubBg cursor-default py-2 pl-10 text-sm first:mt-2 hover:text-white @3xl:border-t @3xl:border-r @3xl:border-l @3xl:py-3 @3xl:pr-3.5 @3xl:pl-3.5 @3xl:text-center @3xl:first:mt-0 @3xl:last:border-b"
+          className="bg-lavender text-txt-2 hover:bg-darkYellow @3xl:border-navBorder @3xl:hover:text-mdYellow @3xl:hover:bg-navSubBg cursor-default py-2 pl-10 first:mt-2 hover:text-white @3xl:border-t @3xl:border-r @3xl:border-l @3xl:pr-3 @3xl:pl-3 @3xl:text-center @3xl:first:mt-0 @3xl:last:border-b"
         >
-          <Link to={subLink.href}>{subLink.label}</Link>
+          <Link to={subLink.href} className="text-sm">
+            {subLink.label}
+          </Link>
         </li>
       ))}
     </ul>
   );
 };
 
-const NavLinkList = ({ links, scope, isDesktop }) => {
+const NavLinkList = ({ links, scope, isDesktop, isLogin }) => {
   const [openDropdown, setOpenDropdown] = useState({});
 
   // [id] is the dynamical key (instead of create a new key named "id", we use [id] for dynamically sets the key based on the value of id)
@@ -36,7 +39,7 @@ const NavLinkList = ({ links, scope, isDesktop }) => {
 
   return (
     <ul
-      className="font-Poppins bg-lavender @3xl:bg-navBg border-navBorder absolute right-0 flex flex-col border-2 @3xl:static @3xl:flex-row @3xl:justify-center @3xl:gap-[4.125rem] @3xl:border-none @3xl:py-6"
+      className="font-Poppins bg-lavender @3xl:bg-navBg border-navBorder absolute right-0 flex flex-col border-2 @3xl:static @3xl:flex-row @3xl:justify-center @3xl:gap-12 @3xl:border-none @3xl:py-5"
       ref={scope}
     >
       {links.map((link) => (
@@ -81,26 +84,16 @@ const NavLinkList = ({ links, scope, isDesktop }) => {
 
       {!isDesktop && (
         <li>
-          <div className="border-t-navBorder text-txt-2 mx-auto block border-t px-3.5 py-3 @md:flex @md:items-center @md:justify-between @md:gap-2">
+          <div className="border-t-navBorder text-txt-2 mx-auto flex w-full items-center justify-between border-t px-3.5 py-3">
             <SearchBar />
-
-            <motion.div
-              href="/login"
-              className="group hover:text-primary group mt-2 flex items-center justify-center gap-2 @md:mt-0"
-              initial="initial"
-              whileHover="hovered"
-            >
-              <FiLogIn className="text-3xl" />
-              <span className="relative block">
-                <Link to={"/login"}>Login</Link>
-
-                <motion.span
-                  className="bg-txt-2 group-hover:bg-primary absolute bottom-0 h-0.5 w-full rounded"
-                  variants={hoveredEffect}
-                  transition={hoveredTransition}
-                ></motion.span>
-              </span>
-            </motion.div>
+            {isLogin ? (
+              <UserDropdown />
+            ) : (
+              <Link to={"/login"} className="flex items-center gap-1 hover:text-primary">
+                <FiLogIn className="text-2xl" />
+                Login
+              </Link>
+            )}
           </div>
         </li>
       )}
