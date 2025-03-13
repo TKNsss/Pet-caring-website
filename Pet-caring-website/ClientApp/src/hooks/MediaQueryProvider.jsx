@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
-// The isDesktop state only updates when the screen size changes, which is infrequent -> 'no need fo memoize'.
+// The isDesktop state only updates when the screen size changes, which is infrequent -> 'no need to memoize'.
 // default value when creating context
 const MediaQueryContext = createContext(false);
 

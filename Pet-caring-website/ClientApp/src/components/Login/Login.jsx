@@ -1,15 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { loginImg, catLoginImg } from "../../constants";
 import { FcGoogle } from "react-icons/fc";
 import { useMediaQueryContext } from "../../hooks/MediaQueryProvider";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const isDesktop = useMediaQueryContext();
+  const navigate = useNavigate();
   const formAnimation = isDesktop
     ? { x: isRegistering ? "100%" : "0%" }
     : { x: 0 };
+
+  // When handleNavigate() is called, it only updates isRegistering.
+  // React schedules the state update asynchronously.
+  //  Once the state change is completed, React re-renders the component.
+  // The useEffect hook detects that isRegistering changed and runs.
+  // => navigate() is called after isRegistering updates, ensuring correct navigation.
+
+  useEffect(() => {
+    navigate(isRegistering ? "/register" : "/login");
+  }, [isRegistering, navigate]);
 
   return (
     <div className="bg-lavender flex min-h-screen items-center justify-center p-4">
@@ -83,7 +95,7 @@ const Login = () => {
               type="submit"
               className={`bg-third hover:bg-primary ${isRegistering ? "mt-4" : "mt-6"} w-full cursor-pointer rounded-lg py-3 font-medium text-white transition`}
             >
-              {isRegistering ? "Register" : "Sign In"}
+              {isRegistering ? "Register" : "Sign in"}
             </button>
           </form>
 
