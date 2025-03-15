@@ -1,4 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Pet_caring_website.Data;
 
 namespace Pet_caring_website
@@ -8,61 +10,68 @@ namespace Pet_caring_website
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            
+            // lấy danh sách super-admin từ appsetting.json
+            var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
 
-            // get connection string from appsettings.json
+            // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
+            var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+            var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+            Console.WriteLine($"Google Client ID: {googleClientId}");
+            Console.WriteLine($"Google Client Secret: {googleClientSecret}");
+
+            if (string.IsNullOrEmpty(googleClientId) || string.IsNullOrEmpty(googleClientSecret))
+            {
+                throw new InvalidOperationException("Google Client ID or Secret is missing. Ensure it's set in appsettings.json or environment variables.");
+            }
+
+            // Cấu hình xác thực Google
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+            })
+            .AddCookie()
+            .AddGoogle(googleOptions =>
+            {
+                googleOptions.ClientId = googleClientId;
+                googleOptions.ClientSecret = googleClientSecret;
+                googleOptions.CallbackPath = "/signin-google";
+            });
+
+            // Lấy chuỗi kết nối từ appsettings.json
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new InvalidOperationException("Connection string is missing in appsettings.json");
+            }
 
-            // Add services to the container.
-            builder.Services.AddControllersWithViews();
+            // Đăng ký DbContext với PostgreSQL
+            builder.Services.AddEntityFrameworkNpgsql()
+                .AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
-            // Register the database context (DbContext) with the connection string 
-            builder.Services.AddEntityFrameworkNpgsql().AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(connectionString));
+            builder.Services.AddControllers();
 
             var app = builder.Build();
 
-            // Test database connection
-            using (var scope = app.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                // ILogger<Program>: This is used to log messages to the console or a logging provider.
-                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-                try
-                {
-                    // check the status of the database connection
-                    var canConnect = dbContext.Database.CanConnect();
-
-                    if (canConnect)
-                    {
-                        logger.LogInformation("Successfully connected to the database!");
-                    }
-                    else
-                    {
-                        logger.LogError("Failed to connect to the database.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "An error occurred while connecting to the database.");
-                }
-            }
-
-            // Configure the HTTP request pipeline.
+            // Cấu hình HTTP request pipeline
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
+            app.UseAuthentication();
             app.UseAuthorization();
+
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            app.MapControllers();
 
             app.Run();
         }
