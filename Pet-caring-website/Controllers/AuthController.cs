@@ -186,5 +186,28 @@ namespace Pet_caring_website.Controllers
 
             return Ok($"Người dùng {user.user_name} đã được cấp quyền admin");
         }
+
+        // Thu hồi quyền admin
+        [HttpPost("revoke-admin/{userId}")]
+        public IActionResult RevokeAdmin(Guid userId)
+        {
+            var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var requestingUser = _context.Users.Find(Guid.Parse(requestingUserId));
+
+            if (requestingUser == null || !requestingUser.is_admin)
+                return Unauthorized("Bạn không có quyền thực hiện thao tác này");
+
+            var user = _context.Users.Find(userId);
+            if (user == null) return NotFound("Không tìm thấy người dùng");
+
+            if (!user.is_admin)
+                return BadRequest("Người dùng này không phải admin");
+
+            user.is_admin = false;
+            _context.SaveChanges();
+
+            return Ok($"Quyền admin của {user.user_name} đã bị thu hồi");
+        }
+
     }
 }
