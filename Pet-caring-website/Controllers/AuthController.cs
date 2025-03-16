@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using System.Security.Claims;
 using Pet_caring_website.Data;
 using Pet_caring_website.Models;
 using Pet_caring_website.DTOs;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -44,11 +45,11 @@ namespace Pet_caring_website.Controllers
             var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
 
-            if (email == null)
+            if (string.IsNullOrEmpty(email))
                 return BadRequest("Không lấy được email từ Google");
 
-            // Kiểm tra xem người dùng đã tồn tại trong database chưa
-            var user = _context.Users.FirstOrDefault(u => u.email == email);
+            // Kiểm tra xem người dùng đã tồn tại chưa
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.email == email);
             if (user == null)
             {
                 user = new Users
@@ -61,8 +62,16 @@ namespace Pet_caring_website.Controllers
                     address = "Chưa cập nhật",
                     is_admin = false
                 };
-                _context.Users.Add(user);
-                _context.SaveChanges();
+
+                try
+                {
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    return StatusCode(500, "Lỗi khi lưu thông tin người dùng");
+                }
             }
 
             return Ok(new { message = "Đăng nhập Google thành công", user });
@@ -70,34 +79,61 @@ namespace Pet_caring_website.Controllers
 
         // Xử lý yêu cầu đăng ký
         [HttpPost("register")]
-        public IActionResult Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (_context.Users.Any(u => u.email == request.email))
+            if (await _context.Users.AnyAsync(u => u.email == request.email))
                 return BadRequest("Email đã tồn tại");
 
             var newUser = new Users
             {
-                user_id = Guid.NewGuid(), // Tạo UUID tự động
+                user_id = Guid.NewGuid(),
                 user_name = request.user_name,
                 email = request.email,
                 password = HashPassword(request.password),
                 phone = "0000000000",
                 address = "Chưa cập nhật",
-                is_admin = false // Mặc định không phải admin
+                is_admin = false
             };
 
-            _context.Users.Add(newUser);
-            _context.SaveChanges();
-            return Ok("Đăng ký thành công");
+            try
+            {
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
+                return Ok("Đăng ký thành công");
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, "Lỗi khi lưu thông tin người dùng");
+            }
         }
 
         // Xử lý yêu cầu đăng nhập
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var existingUser = _context.Users.FirstOrDefault(u => u.email == request.email);
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.email == request.email);
             if (existingUser == null || existingUser.password != HashPassword(request.password))
                 return Unauthorized("Thông tin đăng nhập không chính xác");
+
+            // Tạo danh sách claims
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, existingUser.user_id.ToString()),
+                new Claim(ClaimTypes.Name, existingUser.user_name),
+                new Claim(ClaimTypes.Email, existingUser.email),
+                new Claim(ClaimTypes.Role, existingUser.is_admin ? "Admin" : "User")
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var authProperties = new AuthenticationProperties
+            {
+                IsPersistent = true, // Giữ đăng nhập khi đóng trình duyệt
+                ExpiresUtc = DateTime.UtcNow.AddHours(2) // Thời gian hết hạn
+            };
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
+                                          new ClaimsPrincipal(claimsIdentity),
+                                          authProperties);
 
             return Ok("Đăng nhập thành công");
         }
@@ -111,25 +147,44 @@ namespace Pet_caring_website.Controllers
             }
         }
 
-        // Api cho quản trị viên cấp cao để cấp quyền admin cho tài khoản khác
-        [HttpPost("grant-admin/{userId}")]
-        public IActionResult GrantAdmin(Guid userId)
+        [HttpGet("user-info")]
+        [Authorize]
+        public async Task<IActionResult> GetUserInfo()
         {
-            var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Lấy user đang đăng nhập
-            var requestingUser = _context.Users.Find(Guid.Parse(requestingUserId));
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized("Bạn chưa đăng nhập");
+
+            var user = await _context.Users.FindAsync(Guid.Parse(userId));
+            return Ok(user);
+        }
+
+        // API đăng xuất
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity()); // Xóa user khỏi context
+            return Ok("Đăng xuất thành công");
+        }
+
+        // Cấp quyền admin
+        [HttpPost("grant-admin/{userId}")]
+        public async Task<IActionResult> GrantAdmin(Guid userId)
+        {
+            var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var requestingUser = await _context.Users.FindAsync(Guid.Parse(requestingUserId));
 
             if (requestingUser == null || !requestingUser.is_admin)
                 return Unauthorized("Bạn không có quyền cấp admin");
 
-            var user = _context.Users.Find(userId);
+            var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("Không tìm thấy người dùng");
 
             user.is_admin = true;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
 
             return Ok($"Người dùng {user.user_name} đã được cấp quyền admin");
         }
-
     }
 }
-
