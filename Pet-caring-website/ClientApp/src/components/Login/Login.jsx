@@ -4,14 +4,31 @@ import { loginImg, catLoginImg } from "../../constants";
 import { FcGoogle } from "react-icons/fc";
 import { useMediaQueryContext } from "../../hooks/MediaQueryProvider";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { login } from "../../app/features/auth/authSlice";
 
 const Login = () => {
+  // state
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  // hook
   const isDesktop = useMediaQueryContext();
+  // navigate the user to a new page without the user interacting.
   const navigate = useNavigate();
+  // animation
   const formAnimation = isDesktop
     ? { x: isRegistering ? "100%" : "0%" }
     : { x: 0 };
+  // data
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    isAdmin: false,
+  });
+  // redux
+  const dispatch = useDispatch();
 
   // When handleNavigate() is called, it only updates isRegistering.
   // React schedules the state update asynchronously.
@@ -22,6 +39,37 @@ const Login = () => {
   useEffect(() => {
     navigate(isRegistering ? "/register" : "/login");
   }, [isRegistering, navigate]);
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: type === "checkbox" ? setShowPassword(checked) : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!isRegistering) {
+      await dispatch(
+        login({
+          username: formData.username,
+          password: formData.password,
+        }),
+      );
+    } else {
+      await dispatch(
+        register({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        }),
+      );
+    }
+  };
 
   return (
     <div className="bg-lavender flex min-h-screen items-center justify-center p-4">
@@ -43,7 +91,10 @@ const Login = () => {
             {isRegistering ? "Create Your Account" : "Welcome Back"}
           </h2>
 
-          <form className={`${isRegistering ? "mt-4" : "mt-6"}`}>
+          <form
+            className={`${isRegistering ? "mt-4" : "mt-6"}`}
+            onSubmit={handleSubmit}
+          >
             {isRegistering && (
               <div>
                 <label className="block text-gray-700">User name</label>
@@ -51,6 +102,10 @@ const Login = () => {
                   type="text"
                   placeholder="Enter user name"
                   className="log-input"
+                  onChange={handleChange}
+                  name="username"
+                  value={formData.username}
+                  required
                 />
               </div>
             )}
@@ -61,15 +116,23 @@ const Login = () => {
                 type="email"
                 placeholder="Enter your email"
                 className="log-input"
+                onChange={handleChange}
+                name="email"
+                value={formData.email}
+                required
               />
             </div>
 
             <div className="mt-4">
               <label className="block text-gray-700">Password</label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 className="log-input"
+                onChange={handleChange}
+                name="password"
+                value={formData.password}
+                required
               />
             </div>
 
@@ -77,16 +140,27 @@ const Login = () => {
               <div className="mt-4">
                 <label className="block text-gray-700">Confirm Password</label>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Confirm your password"
                   className="log-input"
+                  onChange={handleChange}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  required
                 />
               </div>
             )}
 
             <div className="mt-4 flex items-center">
-              <input type="checkbox" id="terms" className="mr-2" />
-              <label htmlFor="terms" className="text-sm text-gray-600">
+              <input
+                type="checkbox"
+                id="showPass"
+                className="mr-2"
+                onChange={handleChange}
+                name="showPass"
+                checked={showPassword}
+              />
+              <label htmlFor="showPass" className="text-sm text-gray-600">
                 Show password
               </label>
             </div>
