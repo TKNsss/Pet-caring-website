@@ -1,9 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { baseUrl } from "../../../constants";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
   username: null,
+  email: null,
   password: null,
   status: "idle",
   error: null,
@@ -12,18 +14,20 @@ const initialState = {
 // receive 2 arguments: string - action type, "payload creator" - callback function return a promise containing data
 export const login = createAsyncThunk(
   "auth/login",
-  async ({ username, password }, thunkAPI) => {
+  async ({ email, password }, thunkAPI) => {
     try {
-      const response = await axios.post(`${baseUrl}/auth/login`, {
-        username,
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email,
         password,
       });
+      console.log(response.data);
       return response.data;
     } catch (err) {
       // rejectWithValue ensures error is being customized
       // it allows to pass a custom error message to the rejected state in Redux.
       // Axios typically stores the error response in error.response.
       // error.message - a general error message from JavaScript
+      console.log(err.message)
       return thunkAPI.rejectWithValue(err.response?.data || err.message);
     }
   },
@@ -33,15 +37,15 @@ export const register = createAsyncThunk(
   "auth/register",
   async ({ username, email, password, confirmPassword }, thunkAPI) => {
     try {
-      const response = await axios.post(`${baseUrl}/auth/register`, {
+      const response = await axios.post(`${API_BASE_URL}/auth/register`, {
         username,
         email,
         password,
         confirmPassword,
       });
-      return response.data
+      return response.data;
     } catch (err) {
-      return thunkAPI.rejectWithValue(err.response?.data || err.message)
+      return thunkAPI.rejectWithValue(err.response?.data || err.message);
     }
   },
 );
@@ -57,7 +61,7 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.username = action.payload.username;
+        state.email = action.payload.email;
         state.password = action.payload.password;
       })
       .addCase(login.rejected, (state, action) => {

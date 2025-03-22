@@ -1,32 +1,24 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Pet_caring_website.Models;
 
 namespace Pet_caring_website.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
-
         public IActionResult Index()
         {
-            return View();
+            string filePath = Path.Combine(Directory.GetCurrentDirectory(), "ClientApp/dist/index.html");
+
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound("Frontend build not found. Run 'npm run build' in ClientApp.");
+            }
+
+            return PhysicalFile(filePath, "text/html");
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+        public IActionResult Privacy() => RedirectToAction("Index");
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+        public IActionResult Error() => RedirectToAction("Index");
     }
 }

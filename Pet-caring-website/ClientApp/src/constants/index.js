@@ -51,6 +51,4 @@ export const userDropdownLinks = [
   { label: "Sign out", href: "/logout", icon: FaSignOutAlt },
 ];
 
-export const baseUrl = "http://localhost:5173/api/v1"
-
 export { logo, cryIcon, loginImg, catLoginImg };

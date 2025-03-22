@@ -55,7 +55,7 @@ const Login = () => {
     if (!isRegistering) {
       await dispatch(
         login({
-          username: formData.username,
+          email: formData.email,
           password: formData.password,
         }),
       );

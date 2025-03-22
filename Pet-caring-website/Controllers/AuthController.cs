@@ -8,13 +8,15 @@ using System.Security.Claims;
 using Pet_caring_website.Data;
 using Pet_caring_website.Models;
 using Pet_caring_website.DTOs;
-using System.Security.Cryptography;
-using System.Text;
+using BCrypt.Net;
 
 namespace Pet_caring_website.Controllers
 {
-    [Route("api/[controller]")]
+    // This attribute marks the class as an API controller.
     [ApiController]
+    // defines the route for the controller
+    [Route("api/v1/[controller]")]
+    // ControllerBase: the base class for API controllers.It provides methods and properties for handling HTTP requests and responses.
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -38,6 +40,7 @@ namespace Pet_caring_website.Controllers
         public async Task<IActionResult> GoogleResponse()
         {
             var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+
             if (!result.Succeeded)
                 return BadRequest("Đăng nhập Google thất bại");
 
@@ -49,29 +52,36 @@ namespace Pet_caring_website.Controllers
                 return BadRequest("Không lấy được email từ Google");
 
             // Kiểm tra xem người dùng đã tồn tại chưa
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.email == email);
-            if (user == null)
-            {
-                user = new Users
-                {
-                    user_id = Guid.NewGuid(),
-                    user_name = name ?? "Người dùng Google",
-                    email = email,
-                    password = "",  // Không lưu mật khẩu vì đăng nhập bằng Google
-                    phone = "0000000000",
-                    address = "Chưa cập nhật",
-                    is_admin = false
-                };
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-                try
+            if (user != null)
+            {
+                // Nếu người dùng đã tồn tại, có thể trả về thông tin hoặc JWT token
+                return Ok(new
                 {
-                    _context.Users.Add(user);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateException)
-                {
-                    return StatusCode(500, "Lỗi khi lưu thông tin người dùng");
-                }
+                    message = "Đăng nhập Google thành công",
+                    user
+                    // Bạn có thể thêm JWT token nếu cần: token = GenerateJwtToken(user)
+                });
+            }
+
+            // Nếu chưa tồn tại, tạo mới người dùng
+            user = new User
+            {
+                UserId = Guid.NewGuid(),
+                UserName = email,
+                Email = email,
+                Password = "",  // Không lưu mật khẩu vì đăng nhập bằng Google
+            };
+
+            try
+            {
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, "Lỗi khi lưu thông tin người dùng");
             }
 
             return Ok(new { message = "Đăng nhập Google thành công", user });
@@ -81,18 +91,16 @@ namespace Pet_caring_website.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (await _context.Users.AnyAsync(u => u.email == request.email))
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return BadRequest("Email đã tồn tại");
 
-            var newUser = new Users
+            var newUser = new User
             {
-                user_id = Guid.NewGuid(),
-                user_name = request.user_name,
-                email = request.email,
-                password = HashPassword(request.password),
-                phone = "0000000000",
-                address = "Chưa cập nhật",
-                is_admin = false
+                UserId = Guid.NewGuid(),
+                UserName = request.UserName,
+                Email = request.Email,
+                Password = HashPassword(request.Password),
+                Role = "client"
             };
 
             try
@@ -101,9 +109,9 @@ namespace Pet_caring_website.Controllers
                 await _context.SaveChangesAsync();
                 return Ok("Đăng ký thành công");
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
-                return StatusCode(500, "Lỗi khi lưu thông tin người dùng");
+                return StatusCode(500, $"Lỗi khi lưu thông tin người dùng {ex.InnerException?.Message ?? ex.Message}");
             }
         }
 
@@ -111,24 +119,25 @@ namespace Pet_caring_website.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.email == request.email);
-            if (existingUser == null || existingUser.password != HashPassword(request.password))
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.email);
+
+            if (existingUser == null || !VerifyPassword(request.password, existingUser.Password)) {
+                Console.WriteLine(existingUser);
                 return Unauthorized("Thông tin đăng nhập không chính xác");
+            }
 
             // Tạo danh sách claims
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, existingUser.user_id.ToString()),
-                new Claim(ClaimTypes.Name, existingUser.user_name),
-                new Claim(ClaimTypes.Email, existingUser.email),
-                new Claim(ClaimTypes.Role, existingUser.is_admin ? "Admin" : "User")
+                new Claim(ClaimTypes.NameIdentifier, existingUser.UserId.ToString()),
+                new Claim(ClaimTypes.Email, existingUser.Email),
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties
             {
                 IsPersistent = true, // Giữ đăng nhập khi đóng trình duyệt
-                ExpiresUtc = DateTime.UtcNow.AddHours(2) // Thời gian hết hạn
+                ExpiresUtc = DateTime.UtcNow.AddHours(2) // Thời gian hết hạn 2h
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
@@ -138,13 +147,14 @@ namespace Pet_caring_website.Controllers
             return Ok("Đăng nhập thành công");
         }
 
-        private string HashPassword(string password)
+        public static string HashPassword(string password)
         {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(bytes);
-            }
+            return BCrypt.Net.BCrypt.HashPassword(password);
+        }
+
+        public static bool VerifyPassword(string password, string hashedPassword)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
 
         [HttpGet("user-info")]
@@ -169,45 +179,45 @@ namespace Pet_caring_website.Controllers
         }
 
         // Cấp quyền admin
-        [HttpPost("grant-admin/{userId}")]
-        public async Task<IActionResult> GrantAdmin(Guid userId)
-        {
-            var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var requestingUser = await _context.Users.FindAsync(Guid.Parse(requestingUserId));
+        //[HttpPost("grant-admin/{userId}")]
+        //public async Task<IActionResult> GrantAdmin(Guid userId)
+        //{
+        //    var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        //    var requestingUser = await _context.Users.FindAsync(Guid.Parse(requestingUserId));
 
-            if (requestingUser == null || !requestingUser.is_admin)
-                return Unauthorized("Bạn không có quyền cấp admin");
+        //    if (requestingUser == null || !requestingUser.is_admin)
+        //        return Unauthorized("Bạn không có quyền cấp admin");
 
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null) return NotFound("Không tìm thấy người dùng");
+        //    var user = await _context.Users.FindAsync(userId);
+        //    if (user == null) return NotFound("Không tìm thấy người dùng");
 
-            user.is_admin = true;
-            await _context.SaveChangesAsync();
+        //    user.is_admin = true;
+        //    await _context.SaveChangesAsync();
 
-            return Ok($"Người dùng {user.user_name} đã được cấp quyền admin");
-        }
+        //    return Ok($"Người dùng {user.user_name} đã được cấp quyền admin");
+        //}
 
         // Thu hồi quyền admin
-        [HttpPost("revoke-admin/{userId}")]
-        public IActionResult RevokeAdmin(Guid userId)
-        {
-            var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var requestingUser = _context.Users.Find(Guid.Parse(requestingUserId));
+        //[HttpPost("revoke-admin/{userId}")]
+        //public IActionResult RevokeAdmin(Guid userId)
+        //{
+        //    var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        //    var requestingUser = _context.Users.Find(Guid.Parse(requestingUserId));
 
-            if (requestingUser == null || !requestingUser.is_admin)
-                return Unauthorized("Bạn không có quyền thực hiện thao tác này");
+        //    if (requestingUser == null || !requestingUser.is_admin)
+        //        return Unauthorized("Bạn không có quyền thực hiện thao tác này");
 
-            var user = _context.Users.Find(userId);
-            if (user == null) return NotFound("Không tìm thấy người dùng");
+        //    var user = _context.Users.Find(userId);
+        //    if (user == null) return NotFound("Không tìm thấy người dùng");
 
-            if (!user.is_admin)
-                return BadRequest("Người dùng này không phải admin");
+        //    if (!user.is_admin)
+        //        return BadRequest("Người dùng này không phải admin");
 
-            user.is_admin = false;
-            _context.SaveChanges();
+        //    user.is_admin = false;
+        //    _context.SaveChanges();
 
-            return Ok($"Quyền admin của {user.user_name} đã bị thu hồi");
-        }
+        //    return Ok($"Quyền admin của {user.user_name} đã bị thu hồi");
+        //}
 
     }
 }
