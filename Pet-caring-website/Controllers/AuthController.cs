@@ -9,6 +9,9 @@ using Pet_caring_website.Data;
 using Pet_caring_website.Models;
 using Pet_caring_website.DTOs;
 using BCrypt.Net;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Pet_caring_website.Controllers
 {
@@ -20,10 +23,12 @@ namespace Pet_caring_website.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         // Đăng nhập bằng Google
@@ -47,44 +52,39 @@ namespace Pet_caring_website.Controllers
             var claims = result.Principal.Identities.FirstOrDefault()?.Claims;
             var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+            var googleId = claims?.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrEmpty(email))
-                return BadRequest("Không lấy được email từ Google");
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(googleId))
+                return BadRequest("Không lấy được email hoặc GoogleId từ Google");
 
             // Kiểm tra xem người dùng đã tồn tại chưa
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
-            if (user != null)
-            {
-                // Nếu người dùng đã tồn tại, có thể trả về thông tin hoặc JWT token
-                return Ok(new
+            if (user == null)
+            {     
+                // Nếu chưa tồn tại, tạo mới người dùng
+                user = new User
                 {
-                    message = "Đăng nhập Google thành công",
-                    user
-                    // Bạn có thể thêm JWT token nếu cần: token = GenerateJwtToken(user)
-                });
+                    UserId = Guid.NewGuid(),
+                    UserName = name ?? email,
+                    Email = email.ToLower(),
+                    Password = null, // No password since it's an OAuth user
+                    Role = "client"
+                };
+
+                try
+                {
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    return StatusCode(500, "Lỗi khi lưu thông tin người dùng");
+                }
             }
 
-            // Nếu chưa tồn tại, tạo mới người dùng
-            user = new User
-            {
-                UserId = Guid.NewGuid(),
-                UserName = email,
-                Email = email,
-                Password = "",  // Không lưu mật khẩu vì đăng nhập bằng Google
-            };
-
-            try
-            {
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateException)
-            {
-                return StatusCode(500, "Lỗi khi lưu thông tin người dùng");
-            }
-
-            return Ok(new { message = "Đăng nhập Google thành công", user });
+            var token = GenerateJwtToken(user);
+            return Ok(new { message = "Đăng nhập Google thành công", token });
         }
 
         // Xử lý yêu cầu đăng ký
@@ -109,9 +109,9 @@ namespace Pet_caring_website.Controllers
                 await _context.SaveChangesAsync();
                 return Ok("Đăng ký thành công");
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi khi lưu thông tin người dùng {ex.InnerException?.Message ?? ex.Message}");
+                return StatusCode(500, $"Lỗi khi lưu thông tin người dùng: {ex.Message}");
             }
         }
 
@@ -119,49 +119,21 @@ namespace Pet_caring_website.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.email);
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            if (existingUser == null || !VerifyPassword(request.password, existingUser.Password)) {
-                Console.WriteLine(existingUser);
+            if (existingUser == null || !VerifyPassword(request.Password, existingUser.Password))
                 return Unauthorized("Thông tin đăng nhập không chính xác");
-            }
 
-            // Tạo danh sách claims
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, existingUser.UserId.ToString()),
-                new Claim(ClaimTypes.Email, existingUser.Email),
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true, // Giữ đăng nhập khi đóng trình duyệt
-                ExpiresUtc = DateTime.UtcNow.AddHours(2) // Thời gian hết hạn 2h
-            };
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-                                          new ClaimsPrincipal(claimsIdentity),
-                                          authProperties);
-
-            return Ok("Đăng nhập thành công");
+            var token = GenerateJwtToken(existingUser);
+            return Ok(new { message = "Đăng nhập thành công", token });
         }
 
-        public static string HashPassword(string password)
-        {
-            return BCrypt.Net.BCrypt.HashPassword(password);
-        }
-
-        public static bool VerifyPassword(string password, string hashedPassword)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
-        }
 
         [HttpGet("user-info")]
         [Authorize]
         public async Task<IActionResult> GetUserInfo()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
             if (userId == null)
                 return Unauthorized("Bạn chưa đăng nhập");
 
@@ -174,8 +146,41 @@ namespace Pet_caring_website.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity()); // Xóa user khỏi context
             return Ok("Đăng xuất thành công");
+        }
+
+        public static string HashPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
+        }
+
+        public static bool VerifyPassword(string password, string hashedPassword)
+        {
+            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
+            };
+
+            var expiryHours = int.Parse(_configuration["Jwt:ExpiryInHours"] ?? "3");
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(expiryHours),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         // Cấp quyền admin

@@ -2,8 +2,9 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Pet_caring_website.Data;
-using Microsoft.AspNetCore.Hosting.Server;
-using static System.Net.WebRequestMethods;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Pet_caring_website
 {
@@ -42,6 +43,30 @@ namespace Pet_caring_website
                 });
             });
 
+            // Configure Authentication & JWT 
+            var jwtSettings = builder.Configuration.GetSection("Jwt");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    ValidateLifetime = true
+                };
+            });
+
             // GOOGLE AUTHENTICATION
             // Lấy danh sách Super-Admin từ appsettings.json
             var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
@@ -78,6 +103,8 @@ namespace Pet_caring_website
                 googleOptions.ClientSecret = googleClientSecret;
                 googleOptions.CallbackPath = "/signin-google";
             });
+
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
 
