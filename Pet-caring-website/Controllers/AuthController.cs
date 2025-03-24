@@ -1,54 +1,58 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using System.Security.Cryptography;
 using Pet_caring_website.Data;
 using Pet_caring_website.Models;
+using Pet_caring_website.Services;
 using Pet_caring_website.DTOs;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Pet_caring_website.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly EmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, EmailService emailService, IConfiguration configuration)
         {
             _context = context;
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
-        // Đăng nhập bằng Google
+        // 🔹 1. Đăng nhập Google
         [HttpGet("login-google")]
         public IActionResult LoginWithGoogle()
         {
-            var redirectUrl = Url.Action(nameof(GoogleResponse), "Auth");
+            var redirectUrl = Url.Action(nameof(GoogleResponse), "Auth", null, Request.Scheme);
             var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
-        // Xử lý callback từ Google
+        // 🔹 2. Xử lý phản hồi từ Google
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse()
         {
             var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-            if (!result.Succeeded)
-                return BadRequest("Đăng nhập Google thất bại");
+            if (!result.Succeeded) return BadRequest("Đăng nhập Google thất bại");
 
             var claims = result.Principal.Identities.FirstOrDefault()?.Claims;
             var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             var name = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
 
-            if (string.IsNullOrEmpty(email))
-                return BadRequest("Không lấy được email từ Google");
+            if (string.IsNullOrEmpty(email)) return BadRequest("Không lấy được email từ Google");
 
-            // Kiểm tra xem người dùng đã tồn tại chưa
+            // 🔹 Kiểm tra xem user đã tồn tại chưa
             var user = await _context.Users.FirstOrDefaultAsync(u => u.email == email);
             if (user == null)
             {
@@ -57,7 +61,7 @@ namespace Pet_caring_website.Controllers
                     user_id = Guid.NewGuid(),
                     user_name = name ?? "Người dùng Google",
                     email = email,
-                    password = "",  // Không lưu mật khẩu vì đăng nhập bằng Google
+                    password = HashPassword(GenerateRandomPassword()),  // ✅ Tạo mật khẩu ngẫu nhiên và mã hóa
                     phone = "0000000000",
                     address = "Chưa cập nhật",
                     is_admin = false
@@ -74,10 +78,13 @@ namespace Pet_caring_website.Controllers
                 }
             }
 
-            return Ok(new { message = "Đăng nhập Google thành công", user });
+            // 🔹 Tạo JWT Token
+            var token = GenerateJwtToken(user);
+            return Ok(new { message = "Đăng nhập Google thành công", token });
         }
 
-        // Xử lý yêu cầu đăng ký
+
+        // 🔹 3. Đăng ký người dùng
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -90,8 +97,8 @@ namespace Pet_caring_website.Controllers
                 user_name = request.user_name,
                 email = request.email,
                 password = HashPassword(request.password),
-                phone = "0000000000",
-                address = "Chưa cập nhật",
+                phone = request.phone ?? "0000000000",
+                address = request.address ?? "Chưa cập nhật",
                 is_admin = false
             };
 
@@ -107,7 +114,7 @@ namespace Pet_caring_website.Controllers
             }
         }
 
-        // Xử lý yêu cầu đăng nhập
+        // 🔹 4. Đăng nhập bằng email & password
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -115,99 +122,94 @@ namespace Pet_caring_website.Controllers
             if (existingUser == null || existingUser.password != HashPassword(request.password))
                 return Unauthorized("Thông tin đăng nhập không chính xác");
 
-            // Tạo danh sách claims
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, existingUser.user_id.ToString()),
-                new Claim(ClaimTypes.Name, existingUser.user_name),
-                new Claim(ClaimTypes.Email, existingUser.email),
-                new Claim(ClaimTypes.Role, existingUser.is_admin ? "Admin" : "User")
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true, // Giữ đăng nhập khi đóng trình duyệt
-                ExpiresUtc = DateTime.UtcNow.AddHours(2) // Thời gian hết hạn
-            };
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-                                          new ClaimsPrincipal(claimsIdentity),
-                                          authProperties);
-
-            return Ok("Đăng nhập thành công");
+            var token = GenerateJwtToken(existingUser);
+            return Ok(new { message = "Đăng nhập thành công", token });
         }
 
-        private string HashPassword(string password)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(bytes);
-            }
-        }
-
+        // 🔹 5. API lấy thông tin user
         [HttpGet("user-info")]
         [Authorize]
         public async Task<IActionResult> GetUserInfo()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return Unauthorized("Bạn chưa đăng nhập");
+            if (userId == null) return Unauthorized("Bạn chưa đăng nhập");
 
             var user = await _context.Users.FindAsync(Guid.Parse(userId));
             return Ok(user);
         }
 
-        // API đăng xuất
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity()); // Xóa user khỏi context
-            return Ok("Đăng xuất thành công");
-        }
-
-        // Cấp quyền admin
+        // 🔹 6. Cấp quyền admin
         [HttpPost("grant-admin/{userId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GrantAdmin(Guid userId)
         {
-            var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var requestingUser = await _context.Users.FindAsync(Guid.Parse(requestingUserId));
-
-            if (requestingUser == null || !requestingUser.is_admin)
-                return Unauthorized("Bạn không có quyền cấp admin");
-
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("Không tìm thấy người dùng");
 
             user.is_admin = true;
             await _context.SaveChangesAsync();
-
             return Ok($"Người dùng {user.user_name} đã được cấp quyền admin");
         }
 
-        // Thu hồi quyền admin
+        // 🔹 7. Thu hồi quyền admin
         [HttpPost("revoke-admin/{userId}")]
-        public IActionResult RevokeAdmin(Guid userId)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RevokeAdmin(Guid userId)
         {
-            var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var requestingUser = _context.Users.Find(Guid.Parse(requestingUserId));
-
-            if (requestingUser == null || !requestingUser.is_admin)
-                return Unauthorized("Bạn không có quyền thực hiện thao tác này");
-
-            var user = _context.Users.Find(userId);
+            var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("Không tìm thấy người dùng");
 
             if (!user.is_admin)
                 return BadRequest("Người dùng này không phải admin");
 
             user.is_admin = false;
-            _context.SaveChanges();
-
+            await _context.SaveChangesAsync();
             return Ok($"Quyền admin của {user.user_name} đã bị thu hồi");
         }
 
+        // 🔹 8. Tạo JWT Token
+        private string GenerateJwtToken(Users user)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.user_id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, user.email),
+                new Claim(ClaimTypes.Name, user.user_name),
+                new Claim(ClaimTypes.Role, user.is_admin ? "Admin" : "User")
+            };
+
+            var token = new JwtSecurityToken(
+                _configuration["Jwt:Issuer"],
+                _configuration["Jwt:Audience"],
+                claims,
+                expires: DateTime.UtcNow.AddHours(2),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        // 🔹 9. Hàm hash mật khẩu SHA256
+        private string HashPassword(string password)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                return BitConverter.ToString(bytes).Replace("-", "").ToLower();
+            }
+        }
+
+        //   10. Tạo mật khẩu ngẫu nhiên
+        private string GenerateRandomPassword()
+        {
+            const string validChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()";
+            Random random = new Random();
+            return new string(Enumerable.Repeat(validChars, 12) // ✅ Tạo mật khẩu 12 ký tự
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
     }
 }
+    

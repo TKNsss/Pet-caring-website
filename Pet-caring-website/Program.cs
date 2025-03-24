@@ -1,7 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Pet_caring_website.Data;
+using Pet_caring_website.Services;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 namespace Pet_caring_website
 {
@@ -11,89 +16,113 @@ namespace Pet_caring_website
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Lấy danh sách Super-Admin từ appsettings.json
-            var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
+            // ✅ 1. Thêm Email Service
+            builder.Services.AddScoped<EmailService>();
 
-            // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
+            // ✅ 2. Cấu hình session
+            builder.Services.AddMemoryCache();
+            builder.Services.AddDistributedMemoryCache();
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
+
+            // ✅ 3. Lấy thông tin cấu hình Google OAuth
             var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
             var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-
             if (string.IsNullOrEmpty(googleClientId) || string.IsNullOrEmpty(googleClientSecret))
             {
-                throw new InvalidOperationException("Google Client ID or Secret is missing. Ensure it's set in appsettings.json or environment variables.");
+                throw new InvalidOperationException("Google Client ID hoặc Secret bị thiếu.");
             }
 
-            // Cấu hình xác thực Google + Cookie
+            // ✅ 4. Cấu hình JWT Authentication
+            var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
+            if (string.IsNullOrEmpty(jwtSecretKey))
+            {
+                throw new InvalidOperationException("JWT Secret Key bị thiếu.");
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey));
+
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
             })
-            .AddCookie(options =>
+            .AddCookie()
+            .AddJwtBearer(options =>
             {
-                options.LoginPath = "/api/auth/login"; // Đường dẫn đăng nhập
-                options.LogoutPath = "/api/auth/logout"; // Đăng xuất
-                options.AccessDeniedPath = "/api/auth/access-denied"; // Khi bị từ chối
-                options.ExpireTimeSpan = TimeSpan.FromHours(2);
-                options.SlidingExpiration = true;
-                options.Cookie.HttpOnly = true; // Bảo mật cookie
-                options.Cookie.SameSite = SameSiteMode.None; // Để hoạt động với frontend React.js
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ gửi cookie qua HTTPS
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = builder.Configuration["Jwt:Audience"],
+                    IssuerSigningKey = key
+                };
             })
             .AddGoogle(googleOptions =>
             {
                 googleOptions.ClientId = googleClientId;
                 googleOptions.ClientSecret = googleClientSecret;
-                googleOptions.CallbackPath = "/signin-google";
+                googleOptions.CallbackPath = new PathString("/api/v1/auth/google-response");;
             });
 
-            // Lấy chuỗi kết nối từ appsettings.json
+            // ✅ 5. Cấu hình CORS cho React Frontend
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowReactFrontend", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000") // 🎯 Đặt đúng URL frontend của bạn!
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
+
+            // ✅ 6. Kết nối Database
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException("Connection string is missing in appsettings.json");
+                throw new InvalidOperationException("Connection string bị thiếu trong appsettings.json");
             }
 
-            // Đăng ký DbContext với PostgreSQL
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
             builder.Services.AddControllers();
-
-            // Cấu hình CORS để React.js có thể gọi API
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowReactFrontend",
-                    policy => policy
-                        .WithOrigins("http://localhost:3000") // Chỉnh sửa nếu React chạy trên cổng khác
-                        .AllowCredentials()
-                        .AllowAnyHeader()
-                        .AllowAnyMethod());
-            });
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            // Middleware xử lý lỗi cho production
+            // ✅ 7. Middleware xử lý lỗi & bảo mật
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
 
-            app.UseCors("AllowReactFrontend");
+            app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
+
+            // ✅ 8. Kích hoạt CORS & Session
+            app.UseCors("AllowReactFrontend");
+            app.UseSession();
+
+            // ✅ 9. Thêm Authentication & Authorization
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // Định tuyến API
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
-
             app.MapControllers();
-
             app.Run();
         }
     }

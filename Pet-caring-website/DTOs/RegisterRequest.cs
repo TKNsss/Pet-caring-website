@@ -23,5 +23,8 @@ namespace Pet_caring_website.DTOs
         [Compare("password", ErrorMessage = "The password confirms no match.")]
         public string confirm_password { get; set; } = null!;
 
+        public string phone { get; set; } = "0000000000";  // ✅ Mặc định
+        public string address { get; set; } = "Chưa cập nhật";  // ✅ Mặc định
+
     }
 }
