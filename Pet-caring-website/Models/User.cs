@@ -5,7 +5,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Pet_caring_website.Models;
 
-
 public partial class User
 {
     [Key]

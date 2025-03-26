@@ -5,25 +5,22 @@ import { navLinks, logo } from "../../constants";
 // icons
 import { GiHamburgerMenu } from "react-icons/gi";
 import { IoClose } from "react-icons/io5";
-
 // components + data
 import NavLinkList from "./NavLinkList.jsx";
 import SearchBar from "./SearchBar/SearchBar.jsx";
 import RequestServiceBtn from "../../shares/RequestServiceBtn.jsx";
 import UserDropdown from "./UserDropdown/UserDropdown.jsx";
-
 import { useAnimate, motion } from "framer-motion";
 import { animateMenu, animateListItems } from "../../utils/motion.js";
-
 import { Outlet, Link } from "react-router-dom";
-// context hook
-import { useMediaQueryContext } from "../../hooks/MediaQueryProvider.jsx";
+import { useMediaQueryContext } from "../../contexts/MediaQueryProvider.jsx";
+import { useSelector } from "react-redux";
 
 const NavBar = () => {
   const [openMenu, setOpenMenu] = useState(false);
-  const [login, setLogin] = useState(false);
   const [scope, animate] = useAnimate();
   const isDesktop = useMediaQueryContext();
+  const { user } = useSelector((state) => state.users);
 
   // Run animation on first render
   // use scope.current instead of "ul" here because the ref was within the ul -> to access both ul and li you must lift up the ref.
@@ -56,7 +53,7 @@ const NavBar = () => {
           {isDesktop && <SearchBar />}
 
           <div className="text-txt-2 hidden @3xl:flex @3xl:items-center @3xl:gap-4">
-            {login ? (
+            {user ? (
               <>
                 <RequestServiceBtn />
                 <UserDropdown />
@@ -95,10 +92,9 @@ const NavBar = () => {
           links={navLinks}
           scope={scope}
           isDesktop={isDesktop}
-          isLogin={login}
+          user={user}
         />
       </div>
-
       <Outlet />
     </>
   );

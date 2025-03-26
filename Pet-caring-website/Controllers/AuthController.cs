@@ -128,7 +128,6 @@ namespace Pet_caring_website.Controllers
             return Ok(new { message = "Đăng nhập thành công", token });
         }
 
-
         [HttpGet("user-info")]
         [Authorize]
         public async Task<IActionResult> GetUserInfo()

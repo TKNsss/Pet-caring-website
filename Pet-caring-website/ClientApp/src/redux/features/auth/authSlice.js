@@ -1,12 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { toast } from "react-toastify";
+import handleError from "../../../utils/error";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
-  username: null,
-  email: null,
-  password: null,
+  user: null,
+  token: localStorage.getItem("token") || null,
   status: "idle",
   error: null,
 };
@@ -20,15 +21,12 @@ export const login = createAsyncThunk(
         email,
         password,
       });
-      console.log(response.data);
+      // save to localStorage
+      localStorage.setItem("token", response.data.token);
+      toast.success("Login successful! 🎉");
       return response.data;
     } catch (err) {
-      // rejectWithValue ensures error is being customized
-      // it allows to pass a custom error message to the rejected state in Redux.
-      // Axios typically stores the error response in error.response.
-      // error.message - a general error message from JavaScript
-      console.log(err.message)
-      return thunkAPI.rejectWithValue(err.response?.data || err.message);
+      return handleError(err, thunkAPI, "Login failed!");
     }
   },
 );
@@ -43,12 +41,19 @@ export const register = createAsyncThunk(
         password,
         confirmPassword,
       });
+      toast.success("Registration successful! 🎉");
       return response.data;
     } catch (err) {
-      return thunkAPI.rejectWithValue(err.response?.data || err.message);
+      return handleError(err, thunkAPI, "Registration failed!");
     }
   },
 );
+
+export const logout = createAsyncThunk("auth/logout", async () => {
+  localStorage.removeItem("token");
+  toast.info("You've logged out! 👋");
+  return null;
+});
 
 const authSlice = createSlice({
   name: "auth",
@@ -61,12 +66,24 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.email = action.payload.email;
-        state.password = action.payload.password;
+        state.user = action.payload;
+        state.token = action.payload.token;
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload; // error message
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.status = "succeeded";
+        state.user = null;
+        state.token = null;
+      })
+      .addCase(register.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload;
       });
   },
 });

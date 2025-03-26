@@ -2,37 +2,37 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { loginImg, catLoginImg } from "../../constants";
 import { FcGoogle } from "react-icons/fc";
-import { useMediaQueryContext } from "../../hooks/MediaQueryProvider";
+import { useMediaQueryContext } from "../../contexts/MediaQueryProvider";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { login } from "../../app/features/auth/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { login, register } from "../../redux/features/auth/authSlice";
+import { fetchUserProfile } from "../../redux/features/users/usersSlice";
 
 const Login = () => {
   // state
   const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  // hook
+  // hooks
   const isDesktop = useMediaQueryContext();
-  // navigate the user to a new page without the user interacting.
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // navigate the user to a new page without the user interacting.
+  const dispatch = useDispatch();
+  const status = useSelector((state) => state.auth.status);
   // animation
   const formAnimation = isDesktop
     ? { x: isRegistering ? "100%" : "0%" }
     : { x: 0 };
-  // data
-  const [formData, setFormData] = useState({
+  // form data
+  const initialFormState = {
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
-    isAdmin: false,
-  });
-  // redux
-  const dispatch = useDispatch();
+  }
+  const [formData, setFormData] = useState(initialFormState);
 
   // When handleNavigate() is called, it only updates isRegistering.
   // React schedules the state update asynchronously.
-  //  Once the state change is completed, React re-renders the component.
+  // Once the state change is completed, React re-renders the component.
   // The useEffect hook detects that isRegistering changed and runs.
   // => navigate() is called after isRegistering updates, ensuring correct navigation.
 
@@ -41,24 +41,39 @@ const Login = () => {
   }, [isRegistering, navigate]);
 
   const handleChange = (event) => {
-    const { name, value, type, checked } = event.target;
+    const { name, value, checked } = event.target;
 
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      [name]: type === "checkbox" ? setShowPassword(checked) : value,
-    }));
+    if (name === "showPass") {
+      setShowPassword(checked);
+    } else {
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isRegistering) {
-      await dispatch(
+      const resultAction = await dispatch(
         login({
           email: formData.email,
           password: formData.password,
         }),
       );
+
+      if (login.fulfilled.match(resultAction)) {
+        try {
+          // The .unwrap() method in Redux Toolkit’s createAsyncThunk is used to extract the fulfilled value or throw an error if the promise is rejected.
+          await dispatch(fetchUserProfile()).unwrap(); // Ensures profile is fetched before navigation
+          navigate("/"); // Redirect after fetching profile
+        } catch (err) {
+          // Logs the error from `rejectWithValue`
+          console.error("Failed to fetch profile:", err);
+        }
+      }
     } else {
       await dispatch(
         register({
@@ -69,6 +84,11 @@ const Login = () => {
         }),
       );
     }
+    setFormData(initialFormState);
+  };
+
+  const handleTextChange = (text) => {
+    return status === "loading" ? "Loading..." : text;
   };
 
   return (
@@ -169,7 +189,9 @@ const Login = () => {
               type="submit"
               className={`bg-third hover:bg-primary ${isRegistering ? "mt-4" : "mt-6"} w-full cursor-pointer rounded-lg py-3 font-medium text-white transition`}
             >
-              {isRegistering ? "Register" : "Sign in"}
+              {isRegistering
+                ? handleTextChange("Register")
+                : handleTextChange("Sign in")}
             </button>
           </form>
 

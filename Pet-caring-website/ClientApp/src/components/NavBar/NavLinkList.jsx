@@ -26,7 +26,7 @@ const SubLinkList = ({ id, links, isOpen }) => {
   );
 };
 
-const NavLinkList = ({ links, scope, isDesktop, isLogin }) => {
+const NavLinkList = ({ links, scope, isDesktop, user }) => {
   const [openDropdown, setOpenDropdown] = useState({});
 
   // [id] is the dynamical key (instead of create a new key named "id", we use [id] for dynamically sets the key based on the value of id)
@@ -86,7 +86,7 @@ const NavLinkList = ({ links, scope, isDesktop, isLogin }) => {
         <li>
           <div className="border-t-navBorder text-txt-2 mx-auto flex w-full items-center justify-between border-t px-3.5 py-3">
             <SearchBar />
-            {isLogin ? (
+            {user ? (
               <UserDropdown />
             ) : (
               <Link to={"/login"} className="flex items-center gap-1 hover:text-primary">
