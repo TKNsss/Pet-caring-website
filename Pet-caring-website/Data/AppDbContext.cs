@@ -32,11 +32,6 @@ namespace Pet_caring_website.Data
         public virtual DbSet<User> Users { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-             //ENUM Mappings for PostgreSQL
-            modelBuilder
-                .HasPostgresEnum("AppointmentStatus", new[] { "pending", "confirmed", "completed", "canceled" })
-                .HasPostgresEnum("Gender", new[] { "male", "female" })
-                .HasPostgresEnum("Role", new[] { "client", "vet", "admin" });
 
             modelBuilder.Entity<Appointment>(entity =>
             {

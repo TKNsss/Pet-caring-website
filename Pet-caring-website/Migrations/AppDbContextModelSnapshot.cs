@@ -21,9 +21,6 @@ namespace Pet_caring_website.Migrations
                 .HasAnnotation("ProductVersion", "9.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "AppointmentStatus", new[] { "pending", "confirmed", "completed", "canceled" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "Gender", new[] { "male", "female" });
-            NpgsqlModelBuilderExtensions.HasPostgresEnum(modelBuilder, "Role", new[] { "client", "vet", "admin" });
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Pet_caring_website.Models.Appointment", b =>
