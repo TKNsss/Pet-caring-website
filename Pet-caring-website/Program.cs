@@ -8,6 +8,7 @@ using Pet_caring_website.Services;
 using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Pet_caring_website.Models;
 
 namespace Pet_caring_website
 {
@@ -55,28 +56,33 @@ namespace Pet_caring_website
             });
 
             // Configure Authentication & JWT 
-            var jwtSettings = builder.Configuration.GetSection("Jwt");
+            var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.
+            // Converts the key into a byte array(required for cryptographic operations).
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
+            // configures the authentication system in ASP.NET Core
+            // => This tells ASP.NET Core to automatically validate JWT tokens when users access secured endpoints.
             builder.Services.AddAuthentication(options =>
             {
+                // Sets JWT Bearer authentication as the default scheme for authenticating users.
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                // Defines JWT Bearer authentication as the default scheme when challenging unauthorized users.
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
              .AddCookie() // Thêm Cookie Authentication
             .AddJwtBearer(options =>
             {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
+                options.RequireHttpsMetadata = false; // Allows tokens over HTTP (useful for local development).
+                options.SaveToken = true; // Saves the token inside the authentication properties after validation.
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuerSigningKey = true, // Ensures the token is signed using a valid secret key.
+                    IssuerSigningKey = new SymmetricSecurityKey(key), // Uses the secret key (Key) from appsettings.json for signature validation.
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
-                    ValidateLifetime = true
+                    ValidateLifetime = true // Ensures the token has not expired.
                 };
             })
             .AddGoogle(options =>
@@ -93,14 +99,24 @@ namespace Pet_caring_website
             // Thêm Email Service
             builder.Services.AddScoped<EmailService>();
 
-            // Cấu hình session
-            builder.Services.AddMemoryCache();
-            builder.Services.AddDistributedMemoryCache();
-            builder.Services.AddSession(options =>
+            // Cấu hình xác thực Google + Cookie
+            builder.Services.AddAuthentication()
+            .AddCookie(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(30);
-                options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true;
+                options.LoginPath = "/api/auth/login"; // Đường dẫn đăng nhập
+                options.LogoutPath = "/api/auth/logout"; // Đăng xuất
+                options.AccessDeniedPath = "/api/auth/access-denied"; // Khi bị từ chối
+                options.ExpireTimeSpan = TimeSpan.FromHours(2);
+                options.SlidingExpiration = true;
+                options.Cookie.HttpOnly = true; // Bảo mật cookie
+                options.Cookie.SameSite = SameSiteMode.None; // Để hoạt động với frontend React.js
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ gửi cookie qua HTTPS
+            })
+            .AddGoogle(googleOptions =>
+            {
+                googleOptions.ClientId = googleClientId;
+                googleOptions.ClientSecret = googleClientSecret;
+                googleOptions.CallbackPath = "/signin-google";
             });
 
 
