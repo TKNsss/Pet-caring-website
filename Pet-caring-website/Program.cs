@@ -5,6 +5,7 @@ using Pet_caring_website.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Pet_caring_website.Models;
 
 namespace Pet_caring_website
 {
@@ -44,26 +45,31 @@ namespace Pet_caring_website
             });
 
             // Configure Authentication & JWT 
-            var jwtSettings = builder.Configuration.GetSection("Jwt");
+            var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.
+            // Converts the key into a byte array(required for cryptographic operations).
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
 
+            // configures the authentication system in ASP.NET Core
+            // => This tells ASP.NET Core to automatically validate JWT tokens when users access secured endpoints.
             builder.Services.AddAuthentication(options =>
             {
+                // Sets JWT Bearer authentication as the default scheme for authenticating users.
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                // Defines JWT Bearer authentication as the default scheme when challenging unauthorized users.
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             }).AddJwtBearer(options =>
             {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
+                options.RequireHttpsMetadata = false; // Allows tokens over HTTP (useful for local development).
+                options.SaveToken = true; // Saves the token inside the authentication properties after validation.
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuerSigningKey = true, // Ensures the token is signed using a valid secret key.
+                    IssuerSigningKey = new SymmetricSecurityKey(key), // Uses the secret key (Key) from appsettings.json for signature validation.
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
-                    ValidateLifetime = true
+                    ValidateLifetime = true // Ensures the token has not expired.
                 };
             });
 
@@ -80,12 +86,7 @@ namespace Pet_caring_website
             }
 
             // Cấu hình xác thực Google + Cookie
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-            })
+            builder.Services.AddAuthentication()
             .AddCookie(options =>
             {
                 options.LoginPath = "/api/auth/login"; // Đường dẫn đăng nhập
