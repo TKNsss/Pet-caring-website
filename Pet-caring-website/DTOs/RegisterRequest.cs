@@ -5,23 +5,23 @@ namespace Pet_caring_website.DTOs
     public class RegisterRequest
     {
         [Required]
-        [MaxLength(50)]
-        public string user_name { get; set; } = null!;
+        [StringLength(50)]
+        public string UserName { get; set; } = null!;
 
         [Required]
         [EmailAddress]
-        [MaxLength(50)]
-        public string email { get; set; } = null!;
+        [StringLength(30, ErrorMessage = "Email must not exceed 50 characters.")]
+        public string Email { get; set; } = null!;
 
         [Required]
-        [MinLength(8, ErrorMessage = "Passwords must have at least 8 characters.")]
+        [StringLength(80, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
             ErrorMessage = "The password must contain at least one capital, a regular word, some and a special character.")]
-        public string password { get; set; } = null!;
+        public string Password { get; set; } = null!;
 
         [Required]
-        [Compare("password", ErrorMessage = "The password confirms no match.")]
-        public string confirm_password { get; set; } = null!;
+        [Compare("Password", ErrorMessage = "The password confirms does not match.")]
+        public string ConfirmPassword { get; set; } = null!;
 
         public string phone { get; set; } = "0000000000";  // ✅ Mặc định
         public string address { get; set; } = "Chưa cập nhật";  // ✅ Mặc định

@@ -1,94 +1,63 @@
 @import "tailwindcss";
 
-/* within @theme, u can achieve features as extend scope in the old version */
-/* 
-  if u want to override all default styles of some attributes, just write <attr>-*: initial,...
-*/
 @theme {
-}
+  /* fonts */
+  --font-Inter: "Inter", serif;
+  --font-Poppins: "Poppins", serif;
+  --font-chewy: "Chewy", serif;
+  --font-Lato: "Lato", serif;
+  --font-Monserrat: "Montserrat", sans-serif;
 
-@utility container {
-  margin-inline: auto;
+  /* colors */
+  --color-primary: #5a3bb3;
+  --color-secondary: #e4813a;
+  --color-third: #7759cc;
+  --color-hoverPurple: #8954cc;
+  --color-txt-1: #3e3218;
+  --color-txt-2: #33363f;
+  --color-darkYellow: #f7ce72;
+  --color-mdYellow: #fbe2ac;
+  --color-lightYellow: #fdf3dc;
+  --color-lavender: #ebe8fc;
+  --color-navBorder: #afb1b6;
+  --color-navBg: #f6f4f4;
+  --color-navSubBg: #8459cc;
 }
 
 @layer base {
-  button:not(:disabled),
-  [role="button"]:not(:disabled) {
-    cursor: pointer;
+  a,
+  p,
+  span,
+  li {
+    @apply text-lg;
+  }
+
+  h1,
+  h2 {
+    @apply font-chewy text-third font-thin;
+  }
+
+  h3 {
+    @apply font-Poppins;
   }
 }
 
 @layer components {
-}
+  .web-container {
+    @apply mx-auto w-full;
 
-@layer utilities {
-}
-
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+    @apply [@media(width>=40rem)]:max-w-full; /* 640px */
+    @apply [@media(width>=48rem)]:max-w-[51.25rem]; /* 768px */
+    @apply [@media(width>=64rem)]:max-w-[64rem]; /* 1024px */
+    @apply [@media(width>=80rem)]:max-w-[80rem]; /* 1280px */
+    @apply [@media(width>=96rem)]:max-w-[96rem]; /* 1536px */
   }
-  a:hover {
-    color: #747bff;
+
+  .search-bar {
+    @apply focus:border-txt-2 w-0 rounded-full py-1 pr-3 pl-7 text-base transition-all duration-300 group-hover:w-full group-hover:border focus:w-full focus:border focus:outline-none @2xl:group-hover:w-[22rem] @2xl:focus:w-[22rem] @3xl:w-[320px] @3xl:border @3xl:group-hover:w-[320px] @3xl:focus:w-[320px];
   }
-  button {
-    background-color: #f9f9f9;
+
+  .log-input {
+    @apply focus:ring-third mt-2 w-full rounded-lg border p-2 focus:ring-2 focus:outline-none;
   }
 }
