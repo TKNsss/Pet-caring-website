@@ -36,7 +36,7 @@ namespace Pet_caring_website.Controllers
             _configuration = configuration;
         }
 
-        // 🔹 1. Đăng nhập Google
+        // Đăng nhập Google
         [HttpGet("login-google")]
         public IActionResult LoginWithGoogle()
         {
@@ -45,7 +45,7 @@ namespace Pet_caring_website.Controllers
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
-        // 🔹 2. Xử lý phản hồi từ Google
+        // Xử lý phản hồi từ Google
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse()
         {
@@ -86,7 +86,7 @@ namespace Pet_caring_website.Controllers
                 }
             }
 
-            // 🔹 Tạo JWT Token
+            // Tạo JWT Token
             var token = GenerateJwtToken(user);
 
             return Ok(new
@@ -103,7 +103,7 @@ namespace Pet_caring_website.Controllers
         }
 
 
-        // 🔹 3. Đăng ký người dùng
+        // Đăng ký người dùng xác thực gmail với Otp
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -145,7 +145,7 @@ namespace Pet_caring_website.Controllers
             }
         }
 
-        // 🔹 4. Đăng nhập bằng email & password
+        // Đăng nhập bằng email & password
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -170,7 +170,7 @@ namespace Pet_caring_website.Controllers
             });
         }
 
-        // 🔹 5. API lấy thông tin user
+        // API lấy thông tin user
         [HttpGet("user-info")]
         [Authorize]
         public async Task<IActionResult> GetUserInfo()
@@ -182,31 +182,6 @@ namespace Pet_caring_website.Controllers
             var user = await _context.Users.FindAsync(Guid.Parse(userId));
             return Ok(user);
         }
-
-        //// 🔹 6. Cấp quyền admin
-        //[HttpPost("grant-admin/{userId}")]
-        //[Authorize(Roles = "Admin")]
-        //public async Task<IActionResult> GrantAdmin(Guid userId)
-        //{
-        //    var user = await _context.Users.FindAsync(userId);
-        //    if (user == null) return NotFound("Không tìm thấy người dùng");
-
-        //    user.is_admin = true;
-        //    await _context.SaveChangesAsync();
-        //    return Ok($"Người dùng {user.user_name} đã được cấp quyền admin");
-        //}
-
-        //// 🔹 7. Thu hồi quyền admin
-        //[HttpPost("revoke-admin/{userId}")]
-        //[Authorize(Roles = "Admin")]
-        //public async Task<IActionResult> RevokeAdmin(Guid userId)
-        //{
-        //    var user = await _context.Users.FindAsync(userId);
-        //    if (user == null) return NotFound("Không tìm thấy người dùng");
-        //    user.is_admin = false;
-        //    await _context.SaveChangesAsync();
-        //    return Ok($"Quyền admin của {user.user_name} đã bị thu hồi");
-        //}
 
         // API đăng xuất
         [HttpPost("logout")]
@@ -226,7 +201,7 @@ namespace Pet_caring_website.Controllers
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
 
-        // 🔹 8. Tạo JWT Token
+        // Tạo JWT Token
         private string GenerateJwtToken(User user)
         {
             // Retrieves the secret key(Jwt:Key) from appsettings.json.
@@ -263,6 +238,39 @@ namespace Pet_caring_website.Controllers
             // returns the converted JwtSecurityToken object as a string.
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        // Gán quyền cho user
+        [HttpPost("assign-role")]
+        [Authorize]
+        public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request)
+        {
+            // Lấy email Super Admin từ appsettings.json
+            var superAdminEmail = _configuration["SuperAdmins:Email"];
+
+            // Lấy email của user đang đăng nhập
+            var loggedInUserEmail = User.FindFirstValue(ClaimTypes.Email);
+
+            // Kiểm tra user có phải Super Admin không
+            if (loggedInUserEmail == null || loggedInUserEmail != superAdminEmail)
+            {
+                return Forbid(); // Trả về lỗi 403 Forbidden
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                return NotFound(new { message = "Người dùng không tồn tại!" });
+
+            // Chỉ cho phép gán các quyền hợp lệ
+            var validRoles = new List<string> { "admin", "vet", "client" };
+            if (!validRoles.Contains(request.Role.ToLower()))
+                return BadRequest(new { message = "Quyền không hợp lệ! Chỉ chấp nhận: admin, vet, client" });
+
+            user.Role = request.Role.ToLower();
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"Đã gán quyền '{user.Role}' cho {user.Email}" });
+        }
+
     }
 }
     
