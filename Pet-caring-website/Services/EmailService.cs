@@ -1,55 +1,73 @@
-﻿using System.Net.Mail;
+﻿using System;
 using System.Net;
-using Microsoft.Extensions.Caching.Memory;
+using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Pet_caring_website.Services
 {
     public class EmailService
     {
         private readonly IConfiguration _config;
-        private readonly IMemoryCache _cache;
+        private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IConfiguration config, IMemoryCache cache)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger)
         {
             _config = config;
-            _cache = cache;
+            _logger = logger;
         }
 
-        public void SendOtpEmail(string email)
+        public void SendOtpEmail(string toEmail, string otp)
         {
-            string otp = new Random().Next(100000, 999999).ToString();
-            _cache.Set(email, otp, TimeSpan.FromMinutes(5)); // OTP có hiệu lực 5 phút
-
-            var smtpClient = new SmtpClient(_config["Email:SmtpServer"])
+            // Kiểm tra email có hợp lệ không
+            if (string.IsNullOrEmpty(toEmail))
             {
-                Port = int.Parse(_config["Email:Port"]),
-                Credentials = new NetworkCredential(_config["Email:Username"], _config["Email:Password"]),
-                EnableSsl = true,
-            };
-
-            var mailMessage = new MailMessage
-            {
-                From = new MailAddress(_config["Email:Username"]),
-                Subject = "Mã OTP của bạn",
-                Body = $"Mã OTP của bạn là: {otp}. Mã có hiệu lực trong 5 phút.",
-                IsBodyHtml = false,
-            };
-
-            mailMessage.To.Add(email);
-            smtpClient.Send(mailMessage);
-        }
-
-        public bool VerifyOtp(string email, string otp)
-        {
-            if (_cache.TryGetValue(email, out string? cachedOtp))
-            {
-                if (cachedOtp == otp)
-                {
-                    _cache.Remove(email);
-                    return true;
-                }
+                throw new ArgumentException("Địa chỉ email không được để trống.", nameof(toEmail));
             }
-            return false;
+
+            var fromEmail = _config["EmailSettings:Username"];
+            var password = _config["EmailSettings:Password"];
+
+            _logger.LogInformation($"[EmailService] Sending OTP to: {toEmail}");
+            _logger.LogInformation($"[EmailService] Email: {fromEmail}");
+            _logger.LogInformation($"[EmailService] SMTP Server: smtp.gmail.com, Port: 587, SSL: true");
+            _logger.LogInformation($"[EmailService] Mật khẩu SMTP {(string.IsNullOrEmpty(password) ? "NULL" : "Đã nhận")}");
+
+
+
+            if (string.IsNullOrEmpty(fromEmail) || string.IsNullOrEmpty(password))
+            {
+                throw new InvalidOperationException("Thông tin Email hoặc mật khẩu SMTP không được cấu hình.");
+            }
+
+            try
+            {
+                using var smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential(fromEmail, password),
+                    EnableSsl = true,
+                    UseDefaultCredentials = false
+                };
+
+                using var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail),
+                    Subject = "Mã OTP xác thực",
+                    Body = $"<p>Mã OTP của bạn là: <strong>{otp}</strong></p><p>OTP này có hiệu lực trong 5 phút.</p>",
+                    IsBodyHtml = true
+                };
+
+                mailMessage.To.Add(new MailAddress(toEmail));
+
+                smtpClient.Send(mailMessage);
+                _logger.LogInformation($"OTP đã được gửi tới {toEmail}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[EmailService] Lỗi khi gửi email tới {toEmail}: {ex.Message} \n {ex.StackTrace}");
+                throw new InvalidOperationException($"Không thể gửi email. Chi tiết lỗi: {ex.Message}");
+            }
         }
     }
 }

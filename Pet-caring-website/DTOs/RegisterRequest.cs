@@ -23,6 +23,7 @@ namespace Pet_caring_website.DTOs
         [Compare("Password", ErrorMessage = "The password confirms does not match.")]
         public string ConfirmPassword { get; set; } = null!;
 
+        public string? OtpCode { get; set; }  // Người dùng nhập OTP sau khi nhận email
 
     }
 }

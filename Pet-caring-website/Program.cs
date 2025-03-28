@@ -1,14 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Pet_caring_website.Data;
-using Pet_caring_website.Services;
-using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Pet_caring_website.Models;
+using Pet_caring_website.Services;
+
 
 namespace Pet_caring_website
 {
@@ -26,17 +25,16 @@ namespace Pet_caring_website
                 throw new InvalidOperationException("Connection string is missing in appsettings.json");
             }
 
-            // Lấy ClientId và ClientSecret (thông tin gg oauth) từ cấu hình hoặc biến môi trường
-            var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
-            var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-            if (string.IsNullOrEmpty(googleClientId) || string.IsNullOrEmpty(googleClientSecret))
-            {
-                throw new InvalidOperationException("Google Client ID hoặc Secret bị thiếu.");
-            }
-
             // ADD SERVICES:
             // Registers controllers in the application to handle API requests.
             builder.Services.AddControllers();
+
+            // Đọc cấu hình EmailSetting từ appsettings.json
+            builder.Services.Configure<EmailService>(builder.Configuration.GetSection("EmailSettings"));
+            builder.Services.AddMemoryCache(); // Đăng ký IMemoryCache
+            builder.Services.AddSingleton<EmailService>(); // Đăng ký EmailService
+            builder.Services.AddScoped<OtpService>(); // Đăng ký OtpService
+
             // Đăng ký DbContext với PostgreSQL
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
@@ -55,10 +53,23 @@ namespace Pet_caring_website
                 });
             });
 
+
             // Configure Authentication & JWT 
             var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.
             // Converts the key into a byte array(required for cryptographic operations).
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+            // Lấy danh sách Super-Admin từ appsettings.json
+            var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
+            
+            // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
+            var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+            var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+            if (string.IsNullOrEmpty(googleClientId) || string.IsNullOrEmpty(googleClientSecret))
+            {
+                throw new InvalidOperationException("Google Client ID or Secret is missing. Ensure it's set in appsettings.json or environment variables.");
+            }
 
             // configures the authentication system in ASP.NET Core
             // => This tells ASP.NET Core to automatically validate JWT tokens when users access secured endpoints.
@@ -68,8 +79,8 @@ namespace Pet_caring_website
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 // Defines JWT Bearer authentication as the default scheme when challenging unauthorized users.
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme; 
             })
-             .AddCookie() // Thêm Cookie Authentication
             .AddJwtBearer(options =>
             {
                 options.RequireHttpsMetadata = false; // Allows tokens over HTTP (useful for local development).
@@ -85,33 +96,7 @@ namespace Pet_caring_website
                     ValidateLifetime = true // Ensures the token has not expired.
                 };
             })
-            .AddGoogle(options =>
-            {
-                options.ClientId = googleClientId;
-                options.ClientSecret = googleClientSecret;
-                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            });
-
-            // GOOGLE AUTHENTICATION
-            // Lấy danh sách Super-Admin từ appsettings.json
-            var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
-
-            // Thêm Email Service
-            builder.Services.AddScoped<EmailService>();
-
-            // Cấu hình xác thực Google + Cookie
-            builder.Services.AddAuthentication()
-            .AddCookie(options =>
-            {
-                options.LoginPath = "/api/auth/login"; // Đường dẫn đăng nhập
-                options.LogoutPath = "/api/auth/logout"; // Đăng xuất
-                options.AccessDeniedPath = "/api/auth/access-denied"; // Khi bị từ chối
-                options.ExpireTimeSpan = TimeSpan.FromHours(2);
-                options.SlidingExpiration = true;
-                options.Cookie.HttpOnly = true; // Bảo mật cookie
-                options.Cookie.SameSite = SameSiteMode.None; // Để hoạt động với frontend React.js
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ gửi cookie qua HTTPS
-            })
+            .AddCookie() // Thêm cookie để lưu phiên đăng nhập
             .AddGoogle(googleOptions =>
             {
                 googleOptions.ClientId = googleClientId;
@@ -119,11 +104,11 @@ namespace Pet_caring_website
                 googleOptions.CallbackPath = "/signin-google";
             });
 
-
             builder.Services.AddAuthorization();
+
             var app = builder.Build();
 
-            // Middleware xử lý lỗi & bảo mật
+            // Middleware xử lý lỗi cho production
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
@@ -134,9 +119,6 @@ namespace Pet_caring_website
             app.UseStaticFiles();
             // Enables endpoint routing.
             app.UseRouting();
-
-            app.UseSession();
-
             // Ensures authentication and authorization are applied.
             app.UseAuthentication();
             app.UseAuthorization();

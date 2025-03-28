@@ -25,13 +25,14 @@ namespace Pet_caring_website.Controllers
     {
         private readonly AppDbContext _context;
         private readonly EmailService _emailService;
+        private readonly OtpService _otpService;
         private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context, EmailService emailService, IConfiguration configuration)
-
+        public AuthController(AppDbContext context, EmailService emailService, IConfiguration configuration, OtpService otpService)
         {
             _context = context;
             _emailService = emailService;
+            _otpService = otpService;
             _configuration = configuration;
         }
 
@@ -109,7 +110,21 @@ namespace Pet_caring_website.Controllers
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return BadRequest("Email đã tồn tại");
 
-            var newUser = new User
+            if (string.IsNullOrEmpty(request.OtpCode))  // Bước 1: Gửi OTP
+            {
+                var otp = _otpService.GenerateOtp(request.Email);
+                _emailService.SendOtpEmail(request.Email, otp);
+                return Ok(new { message = "Mã OTP đã được gửi đến email của bạn." });
+            }
+            else  // Bước 2: Xác thực OTP
+            {
+                if (!_otpService.VerifyOtp(request.Email, request.OtpCode))
+                {
+                    return BadRequest(new { message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
+                }
+            }
+
+                var newUser = new User
             {
                 UserId = Guid.NewGuid(),
                 UserName = request.UserName,
