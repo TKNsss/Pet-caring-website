@@ -17,7 +17,7 @@ namespace Pet_caring_website.Services
             _logger = logger;
         }
 
-        public void SendOtpEmail(string toEmail, string otp)
+        public void SendOtpEmail(string toEmail, string otp, string subjectType)
         {
             // Kiểm tra email có hợp lệ không
             if (string.IsNullOrEmpty(toEmail))
@@ -40,6 +40,28 @@ namespace Pet_caring_website.Services
                 throw new InvalidOperationException("Thông tin Email hoặc mật khẩu SMTP không được cấu hình.");
             }
 
+            // Xác định tiêu đề và nội dung email theo loại OTP
+            string subject, body;
+            if (subjectType == "register")
+            {
+                subject = "Xác nhận đăng ký tài khoản";
+                body = $"<p>Chào mừng bạn đến với hệ thống của chúng tôi!</p>" +
+                       $"<p>Mã OTP đăng ký của bạn là: <strong>{otp}</strong></p>" +
+                       $"<p>Vui lòng nhập mã này để hoàn tất đăng ký. Mã có hiệu lực trong 5 phút.</p>";
+            }
+            else if (subjectType == "reset-password")
+            {
+                subject = "Mã OTP đặt lại mật khẩu";
+                body = $"<p>Bạn đã yêu cầu đặt lại mật khẩu.</p>" +
+                       $"<p>Mã OTP của bạn là: <strong>{otp}</strong></p>" +
+                       $"<p>OTP này có hiệu lực trong 5 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>";
+            }
+            else
+            {
+                throw new ArgumentException("Loại email không hợp lệ.", nameof(subjectType));
+            }
+
+
             try
             {
                 using var smtpClient = new SmtpClient("smtp.gmail.com")
@@ -53,8 +75,8 @@ namespace Pet_caring_website.Services
                 using var mailMessage = new MailMessage
                 {
                     From = new MailAddress(fromEmail),
-                    Subject = "Mã OTP xác thực",
-                    Body = $"<p>Mã OTP của bạn là: <strong>{otp}</strong></p><p>OTP này có hiệu lực trong 5 phút.</p>",
+                    Subject = subject,
+                    Body = body,
                     IsBodyHtml = true
                 };
 

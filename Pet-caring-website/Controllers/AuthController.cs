@@ -107,41 +107,44 @@ namespace Pet_caring_website.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return BadRequest("Email đã tồn tại");
 
-            if (string.IsNullOrEmpty(request.OtpCode))  // Bước 1: Gửi OTP
+            // Nếu chưa có OTP được cung cấp, gửi OTP qua email
+            if (string.IsNullOrEmpty(request.OtpCode))
             {
+                // Tạo OTP
                 var otp = _otpService.GenerateOtp(request.Email);
-                _emailService.SendOtpEmail(request.Email, otp);
-                return Ok(new { message = "Mã OTP đã được gửi đến email của bạn." });
+                // Gửi OTP qua email với subject "register"
+                _emailService.SendOtpEmail(request.Email, otp, "register");
+                return Ok("Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra email để hoàn tất đăng ký.");
             }
-            else  // Bước 2: Xác thực OTP
+            else
             {
+                // Nếu đã có OTP, xác thực OTP
                 if (!_otpService.VerifyOtp(request.Email, request.OtpCode))
-                {
-                    return BadRequest(new { message = "Mã OTP không hợp lệ hoặc đã hết hạn!" });
-                }
-            }
+                    return BadRequest("Mã OTP không hợp lệ hoặc đã hết hạn.");
 
                 var newUser = new User
-            {
-                UserId = Guid.NewGuid(),
-                UserName = request.UserName,
-                Email = request.Email,
-                Password = HashPassword(request.Password),
-                Role = "client"
-            };
+                {
+                    UserId = Guid.NewGuid(),
+                    UserName = request.UserName,
+                    Email = request.Email,
+                    Password = HashPassword(request.Password),
+                    Role = "client"
+                };
 
-            try
-            {
-                _context.Users.Add(newUser);
-                await _context.SaveChangesAsync();
-                return Ok("Đăng ký thành công");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi khi lưu thông tin người dùng: {ex.Message}");
+                try
+                {
+                    _context.Users.Add(newUser);
+                    await _context.SaveChangesAsync();
+                    return Ok("Đăng ký thành công");
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Lỗi khi lưu thông tin người dùng: {ex.Message}");
+                }
             }
         }
 
@@ -269,6 +272,77 @@ namespace Pet_caring_website.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = $"Đã gán quyền '{user.Role}' cho {user.Email}" });
+        }
+
+        // Gửi mã OTP để đặt lại mật khẩu
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email) || !IsValidEmail(request.Email))
+                return BadRequest("Email không hợp lệ.");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                return NotFound("Email không tồn tại trong hệ thống.");
+
+            try
+            {
+                var otp = _otpService.GenerateOtp(request.Email);
+                _emailService.SendOtpEmail(request.Email, otp, "reset-password");
+
+                return Ok(new { message = "Mã OTP đã được gửi đến email của bạn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi gửi email: {ex.Message}");
+            }
+        }
+
+        // Đặt lại mật khẩu sau khi xác thực OTP
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (!_otpService.VerifyOtp(request.Email, request.OtpCode))
+                return BadRequest("Mã OTP không hợp lệ hoặc đã hết hạn.");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null) return NotFound("Email không tồn tại trong hệ thống.");
+
+            if (!IsValidPassword(request.NewPassword))
+                return BadRequest("Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
+
+            user.Password = HashPassword(request.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok("Mật khẩu đã được cập nhật thành công.");
+        }
+
+        // Kiểm tra email có đúng định dạng không
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsValidPassword(string password)
+        {
+            // Kiểm tra độ dài, chữ hoa, chữ thường, số và ký tự đặc biệt
+            if (password.Length < 8)
+                return false;
+            if (!password.Any(char.IsUpper) || !password.Any(char.IsLower))
+                return false;
+            if (!password.Any(char.IsDigit))
+                return false;
+            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
+                return false;
+            return true;
         }
 
     }
