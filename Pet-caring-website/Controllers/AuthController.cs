@@ -12,7 +12,7 @@ using System.Security.Cryptography;
 using Pet_caring_website.Data;
 using Pet_caring_website.Models;
 using Pet_caring_website.Services;
-using Pet_caring_website.DTOs;
+using Pet_caring_website.DTOs.Auth;
 using BCrypt.Net;
 
 namespace Pet_caring_website.Controllers

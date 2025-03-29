@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Pet_caring_website.DTOs.User;
 
 namespace Pet_caring_website.Controllers
 {
@@ -56,6 +57,43 @@ namespace Pet_caring_website.Controllers
                 message = "Lấy thông tin người dùng thành công",
                 user
             });
+        }
+
+        // Update user profile
+        [HttpPut("update-profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            {
+                return Unauthorized(new { message = "Bạn chưa đăng nhập" });
+            }
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "Người dùng không tồn tại" });
+            }
+
+            // Cập nhật thông tin cơ bản
+            user.UserName = request.UserName ?? user.UserName;
+            user.FirstName = request.FirstName ?? user.FirstName;
+            user.LastName = request.LastName ?? user.LastName;
+            user.Phone = request.Phone ?? user.Phone;
+            user.Address = request.Address ?? user.Address;
+
+            // Nếu user có role là "vet", mới cho phép cập nhật speciality
+            if (user.Role == "vet" && !string.IsNullOrEmpty(request.Speciality))
+            {
+                user.Speciality = request.Speciality;
+            }
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Cập nhật thông tin thành công" });
         }
     }
 }
