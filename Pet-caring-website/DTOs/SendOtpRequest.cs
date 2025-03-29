@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
 namespace Pet_caring_website.DTOs
 {
 	public class SendOtpRequest
 	{
-		public required string Email { get; set; }
+        [EmailAddress]
+        public required string Email { get; set; }
 	}
 }

@@ -308,13 +308,61 @@ namespace Pet_caring_website.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null) return NotFound("Email không tồn tại trong hệ thống.");
 
-            if (!IsValidPassword(request.NewPassword))
-                return BadRequest("Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
-
             user.Password = HashPassword(request.NewPassword);
             await _context.SaveChangesAsync();
 
             return Ok("Mật khẩu đã được cập nhật thành công.");
+        }
+
+        // Đổi mật khẩu khi người dùng vẫn còn phiên đăng nhập
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Dữ liệu không hợp lệ.",
+                    errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
+                });
+            }
+
+            // Lấy userId từ token và chuyển sang Guid
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr))
+            {
+                return Unauthorized(new { message = "Thông tin người dùng không hợp lệ." });
+            }
+
+            Guid userId;
+            try
+            {
+                userId = Guid.Parse(userIdStr);
+            }
+            catch (Exception)
+            {
+                return Unauthorized(new { message = "Thông tin người dùng không hợp lệ." });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                return Unauthorized(new { message = "Người dùng không tồn tại." });
+            }
+
+            // So sánh mật khẩu cũ (sử dụng BCrypt để verify)
+            if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.Password))
+            {
+                return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
+            }
+
+            // Cập nhật mật khẩu mới sau khi đã hash
+            user.Password = HashPassword(request.NewPassword);
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đổi mật khẩu thành công." });
         }
 
         // Kiểm tra email có đúng định dạng không
@@ -329,20 +377,6 @@ namespace Pet_caring_website.Controllers
             {
                 return false;
             }
-        }
-
-        private bool IsValidPassword(string password)
-        {
-            // Kiểm tra độ dài, chữ hoa, chữ thường, số và ký tự đặc biệt
-            if (password.Length < 8)
-                return false;
-            if (!password.Any(char.IsUpper) || !password.Any(char.IsLower))
-                return false;
-            if (!password.Any(char.IsDigit))
-                return false;
-            if (!password.Any(ch => !char.IsLetterOrDigit(ch)))
-                return false;
-            return true;
         }
 
     }
