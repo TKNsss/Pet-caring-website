@@ -131,7 +131,7 @@ namespace Pet_caring_website.Controllers
                     UserId = Guid.NewGuid(),
                     UserName = request.UserName,
                     Email = request.Email,
-                    Password = HashPassword(request.Password),
+                    Password = PasswordService.HashPassword(request.Password),
                     Role = "client"
                 };
 
@@ -155,7 +155,7 @@ namespace Pet_caring_website.Controllers
             var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            if (existingUser == null || !VerifyPassword(request.Password, existingUser.Password))
+            if (existingUser == null || !PasswordService.VerifyPassword(request.Password, existingUser.Password))
                 return Unauthorized("Thông tin đăng nhập không chính xác");
 
             var token = GenerateJwtToken(existingUser);
@@ -194,15 +194,15 @@ namespace Pet_caring_website.Controllers
             return Ok("Đăng xuất thành công");
         }
 
-        public static string HashPassword(string password)
-        {
-            return BCrypt.Net.BCrypt.HashPassword(password);
-        }
+        //public static string HashPassword(string password)
+        //{
+        //    return BCrypt.Net.BCrypt.HashPassword(password);
+        //}
 
-        public static bool VerifyPassword(string password, string hashedPassword)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
-        }
+        //public static bool VerifyPassword(string password, string hashedPassword)
+        //{
+        //    return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+        //}
 
         // Tạo JWT Token
         private string GenerateJwtToken(User user)
@@ -308,61 +308,10 @@ namespace Pet_caring_website.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null) return NotFound("Email không tồn tại trong hệ thống.");
 
-            user.Password = HashPassword(request.NewPassword);
+            user.Password = PasswordService.HashPassword(request.NewPassword);
             await _context.SaveChangesAsync();
 
             return Ok("Mật khẩu đã được cập nhật thành công.");
-        }
-
-        // Đổi mật khẩu khi người dùng vẫn còn phiên đăng nhập
-        [Authorize]
-        [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new
-                {
-                    message = "Dữ liệu không hợp lệ.",
-                    errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-                });
-            }
-
-            // Lấy userId từ token và chuyển sang Guid
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr))
-            {
-                return Unauthorized(new { message = "Thông tin người dùng không hợp lệ." });
-            }
-
-            Guid userId;
-            try
-            {
-                userId = Guid.Parse(userIdStr);
-            }
-            catch (Exception)
-            {
-                return Unauthorized(new { message = "Thông tin người dùng không hợp lệ." });
-            }
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-            if (user == null)
-            {
-                return Unauthorized(new { message = "Người dùng không tồn tại." });
-            }
-
-            // So sánh mật khẩu cũ (sử dụng BCrypt để verify)
-            if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.Password))
-            {
-                return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
-            }
-
-            // Cập nhật mật khẩu mới sau khi đã hash
-            user.Password = HashPassword(request.NewPassword);
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Đổi mật khẩu thành công." });
         }
 
         // Kiểm tra email có đúng định dạng không
