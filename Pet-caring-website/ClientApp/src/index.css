@@ -1,6 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Chewy&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Chewy&display=swap");
 @import "tailwindcss";
 
+html {
+  overflow: scroll;
+}
+html::-webkit-scrollbar {
+  display: none;
+}
 
 @theme {
   /* fonts */
@@ -29,7 +35,6 @@
 @layer base {
   a,
   p,
-  span,
   li {
     @apply text-lg;
   }
