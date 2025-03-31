@@ -38,13 +38,13 @@ namespace Pet_caring_website.Controllers
                 .Where(u => u.UserId == userId)
                 .Select(u => new
                 {
-                    u.UserId,
-                    u.UserName,
-                    u.Email,
-                    u.FirstName,
-                    u.LastName,
-                    u.Phone,
-                    u.Address,
+                    user_id = u.UserId,
+                    username = u.UserName,
+                    email = u.Email,
+                    firstname = u.FirstName,
+                    lastname = u.LastName,
+                    phone = u.Phone,
+                    address = u.Address,
                 })
                 .FirstOrDefaultAsync();
 

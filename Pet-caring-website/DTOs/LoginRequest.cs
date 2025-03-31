@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Pet_caring_website.DTOs
 {
@@ -9,7 +9,7 @@ namespace Pet_caring_website.DTOs
         public string Email { get; set; } = null!;
 
         [Required]
-        [MinLength(8)]
+        [MinLength(8, ErrorMessage = "Mật khẩu phải có ít nhất 8 ký tự.")]
         public string Password { get; set; } = null!;
     }
 }

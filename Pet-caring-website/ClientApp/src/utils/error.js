@@ -1,8 +1,17 @@
 import { toast } from "react-toastify";
-const handleError = (err, thunkAPI, defaultMessage) => {
-  const errorMessage = err.response?.data
-    ? `${err.response.data} (${err.message})`
-    : `${defaultMessage} (${err.message})`;
+const handleError = (err, thunkAPI) => {
+  let errorMessage = "Something went wrong!";
+
+  if (err.response?.data) {
+    if (typeof err.response.data === "string") {
+      errorMessage = err.response.data;
+    } else if (err.response.data.errors) {
+      // Handle ASP.NET Core model validation errors
+      errorMessage = Object.values(err.response.data.errors).flat().join(" ");
+    } else if (err.response.data.message) {
+      errorMessage = err.response.data.message;
+    }
+  }
 
   toast.error(errorMessage); // 🔥 Show error notification
   // rejectWithValue ensures error is being customized

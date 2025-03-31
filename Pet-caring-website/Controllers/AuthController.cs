@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using System.Security.Claims;
 using Pet_caring_website.Data;
@@ -12,6 +11,7 @@ using BCrypt.Net;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Linq;
 
 namespace Pet_caring_website.Controllers
 {
@@ -117,11 +117,11 @@ namespace Pet_caring_website.Controllers
             {
                 _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
-                return Ok("Đăng ký thành công");
+                return Ok(new { message = "Đăng ký thành công" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi khi lưu thông tin người dùng: {ex.Message}");
+                return StatusCode(500, new { message = $"Lỗi khi lưu thông tin người dùng" });
             }
         }
 
@@ -133,7 +133,7 @@ namespace Pet_caring_website.Controllers
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (existingUser == null || !VerifyPassword(request.Password, existingUser.Password))
-                return Unauthorized("Thông tin đăng nhập không chính xác");
+                return Unauthorized(new { message = "Thông tin đăng nhập không chính xác!" });
 
             var token = GenerateJwtToken(existingUser);
 
@@ -164,10 +164,9 @@ namespace Pet_caring_website.Controllers
 
         // API đăng xuất
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Ok("Đăng xuất thành công");
+        public IActionResult Logout()
+        { 
+            return Ok(new { message = "Đăng xuất thành công!" });
         }
 
         public static string HashPassword(string password)

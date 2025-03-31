@@ -5,7 +5,7 @@ import { FaUserCircle } from "react-icons/fa";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { userDropdownLinks } from "../../../constants";
 
-const UserToggleSection = ({ open, links }) => {
+const UserToggleSection = ({ open, links, user }) => {
   return (
     <div className="font-Poppins relative z-1000">
       {open && (
@@ -13,8 +13,12 @@ const UserToggleSection = ({ open, links }) => {
           <div className="bg-lavender absolute -top-2 right-6 h-4 w-4 rotate-45 border-t border-l border-gray-200"></div>
 
           <div className="border-navBorder border-b p-4 text-center">
-            <h3 className="text-txt-2 text-lg font-semibold">Welcome</h3>
-            <p className="text-sm text-gray-400">Website Designer</p>
+            <h3 className="text-txt-2 text-lg font-semibold">
+              {user ? "Welcome" : "Not logged in"}
+            </h3>
+            <p className="text-sm text-gray-400">
+              {user ? user.user.username : "None"}
+            </p>
           </div>
 
           <ul className="text-txt-2 text-sm">
@@ -35,13 +39,13 @@ const UserToggleSection = ({ open, links }) => {
     </div>
   );
 };
-const UserDropdown = () => {
+const UserDropdown = ({ user }) => {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <div
-        className="hover:text-primary focus:text-primary ml-auto flex items-center"
+        className="hover:text-primary cursor-pointer focus:text-primary ml-auto flex items-center"
         onClick={() => setOpen((prevOpen) => !prevOpen)}
       >
         <FaUserCircle className="text-4xl" />
@@ -49,7 +53,7 @@ const UserDropdown = () => {
           className={`text-xl transition duration-150 ease-out ${open ? "rotate-0" : "-rotate-180"} `}
         />
       </div>
-      <UserToggleSection open={open} links={userDropdownLinks} />
+      <UserToggleSection open={open} links={userDropdownLinks} user={user}/>
     </>
   );
 };

@@ -23,10 +23,10 @@ export const login = createAsyncThunk(
       });
       // save to localStorage
       localStorage.setItem("token", response.data.token);
-      toast.success("Login successful! 🎉");
+      toast.success(`${response.data.message} 🎉`);
       return response.data;
     } catch (err) {
-      return handleError(err, thunkAPI, "Login failed!");
+      return handleError(err, thunkAPI);
     }
   },
 );
@@ -41,10 +41,10 @@ export const register = createAsyncThunk(
         password,
         confirmPassword,
       });
-      toast.success("Registration successful! 🎉");
+      toast.success(`${response.data.message} 🎉`);
       return response.data;
     } catch (err) {
-      return handleError(err, thunkAPI, "Registration failed!");
+      return handleError(err, thunkAPI);
     }
   },
 );

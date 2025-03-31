@@ -48,7 +48,7 @@ export const userDropdownLinks = [
   { label: "My Profile", href: "/profile", icon: FaUser },
   { label: "Settings", href: "/setting", icon: FaCog },
   { label: "Help", href: "/help", icon: FaQuestionCircle },
-  { label: "Sign out", href: "/logout", icon: FaSignOutAlt },
+  { label: "Sign out", href: "/auth/logout", icon: FaSignOutAlt },
 ];
 
 export { logo, cryIcon, loginImg, catLoginImg };

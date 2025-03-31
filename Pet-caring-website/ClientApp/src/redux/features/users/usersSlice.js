@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import handleError from "../../../utils/error";
+import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -14,13 +15,18 @@ export const fetchUserProfile = createAsyncThunk(
   async (_, thunkAPI) => {
     try {
       const token = thunkAPI.getState().auth.token; // Get token from auth state
-      const response = await axios.get(`${API_BASE_URL}/profile`, {
+
+      if (!token) {
+        toast.warning("No authenticated token found.");
+        return;
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/user/profile`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
-      toast.success("Profile loaded successfully! 🎉"); // ✅ Success message
+      }); // ✅ Success message
       return response.data;
     } catch (err) {
-      handleError(err, thunkAPI, "Failed to fetch Profile!");
+      return handleError(err, thunkAPI);
     }
   },
 );

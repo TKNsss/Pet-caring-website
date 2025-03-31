@@ -27,7 +27,7 @@ const Login = () => {
     email: "",
     password: "",
     confirmPassword: "",
-  }
+  };
   const [formData, setFormData] = useState(initialFormState);
 
   // When handleNavigate() is called, it only updates isRegistering.
@@ -68,11 +68,11 @@ const Login = () => {
         try {
           // The .unwrap() method in Redux Toolkit’s createAsyncThunk is used to extract the fulfilled value or throw an error if the promise is rejected.
           await dispatch(fetchUserProfile()).unwrap(); // Ensures profile is fetched before navigation
-          navigate("/"); // Redirect after fetching profile
         } catch (err) {
           // Logs the error from `rejectWithValue`
           console.error("Failed to fetch profile:", err);
         }
+        navigate("/");
       }
     } else {
       await dispatch(

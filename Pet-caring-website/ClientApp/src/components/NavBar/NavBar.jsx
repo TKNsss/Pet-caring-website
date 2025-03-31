@@ -56,7 +56,7 @@ const NavBar = () => {
             {user ? (
               <>
                 <RequestServiceBtn />
-                <UserDropdown />
+                <UserDropdown user={user} />
               </>
             ) : (
               <>

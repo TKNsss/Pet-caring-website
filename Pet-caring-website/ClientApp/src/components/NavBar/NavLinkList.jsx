@@ -87,7 +87,7 @@ const NavLinkList = ({ links, scope, isDesktop, user }) => {
           <div className="border-t-navBorder text-txt-2 mx-auto flex w-full items-center justify-between border-t px-3.5 py-3">
             <SearchBar />
             {user ? (
-              <UserDropdown />
+              <UserDropdown user={user} />
             ) : (
               <Link to={"/login"} className="flex items-center gap-1 hover:text-primary">
                 <FiLogIn className="text-2xl" />
