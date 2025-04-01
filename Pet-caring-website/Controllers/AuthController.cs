@@ -11,7 +11,6 @@ using BCrypt.Net;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using System.Linq;
 
 namespace Pet_caring_website.Controllers
 {
@@ -83,18 +82,10 @@ namespace Pet_caring_website.Controllers
             }
 
             var token = GenerateJwtToken(user);
+            var fe = _configuration["Jwt:Audience"];
+            var frontendUrl = $"{fe}/login?token={token}";
 
-            return Ok(new
-            {
-                message = "Đăng nhập Google thành công",
-                token,
-                user = new
-                {
-                    id = user.UserId,
-                    username = user.UserName,
-                    email = user.Email,
-                }
-            });
+            return Redirect(frontendUrl);
         }
 
         // Xử lý yêu cầu đăng ký
@@ -119,9 +110,9 @@ namespace Pet_caring_website.Controllers
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Đăng ký thành công" });
             }
-            catch (Exception ex)
+            catch (DbUpdateException ex)
             {
-                return StatusCode(500, new { message = $"Lỗi khi lưu thông tin người dùng" });
+                return StatusCode(500, new { message = "Lỗi khi lưu thông tin người dùng", error = ex.InnerException?.Message ?? ex.Message });
             }
         }
 

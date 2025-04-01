@@ -42,7 +42,6 @@ export const register = createAsyncThunk(
         confirmPassword,
       });
       toast.success(`${response.data.message} 🎉`);
-      return response.data;
     } catch (err) {
       return handleError(err, thunkAPI);
     }
@@ -50,15 +49,25 @@ export const register = createAsyncThunk(
 );
 
 export const logout = createAsyncThunk("auth/logout", async () => {
-  localStorage.removeItem("token");
-  toast.info("You've logged out! 👋");
-  return null;
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/logout`);
+    localStorage.removeItem("token");
+    toast.info(`${response.data.message} 👋`);
+    return null;
+  } catch (err) {
+    return handleError(err, thunkAPI);
+  }
 });
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {},
+  reducers: {
+    updateToken: (state, action) => {
+      state.token = action.payload;
+      localStorage.setItem("token", action.payload); 
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(login.pending, (state) => {
@@ -71,7 +80,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload; // error message
+        state.error = action.payload;
       })
       .addCase(logout.fulfilled, (state) => {
         state.status = "succeeded";
@@ -81,6 +90,9 @@ const authSlice = createSlice({
       .addCase(register.pending, (state) => {
         state.status = "loading";
       })
+      .addCase(register.fulfilled, (state) => {
+        state.status = "succeeded";
+      })
       .addCase(register.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
@@ -88,4 +100,5 @@ const authSlice = createSlice({
   },
 });
 
+export const { updateToken } = authSlice.actions;
 export default authSlice.reducer;

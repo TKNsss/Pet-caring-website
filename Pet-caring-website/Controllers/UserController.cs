@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Pet_caring_website.Data;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Pet_caring_website.Controllers
 {

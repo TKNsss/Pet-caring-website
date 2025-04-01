@@ -3,6 +3,7 @@ using Pet_caring_website.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace Pet_caring_website
 {
@@ -37,7 +38,8 @@ namespace Pet_caring_website
                 {
                     policy.WithOrigins("http://localhost:5173") // Allow only your frontend
                           .AllowAnyHeader()  // Allow any headers (e.g., Authorization, Content-Type)
-                          .AllowAnyMethod();  // Allow GET, POST, PUT, DELETE, etc.
+                          .AllowAnyMethod()  // Allow GET, POST, PUT, DELETE, etc.
+                          .AllowCredentials(); // ✅ Allow credentials (cookies, auth headers)
                 });
             });
 
@@ -45,6 +47,18 @@ namespace Pet_caring_website
             var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.
             // Converts the key into a byte array(required for cryptographic operations).
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+            // Lấy danh sách Super-Admin từ appsettings.json
+            var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
+           
+            // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
+            var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+            var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+            if (string.IsNullOrEmpty(googleClientId) || string.IsNullOrEmpty(googleClientSecret))
+            {
+                throw new InvalidOperationException("Google Client ID or Secret is missing. Ensure it's set in appsettings.json or environment variables.");
+            }
 
             // configures the authentication system in ASP.NET Core
             // => This tells ASP.NET Core to automatically validate JWT tokens when users access secured endpoints.
@@ -54,8 +68,9 @@ namespace Pet_caring_website
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 // Defines JWT Bearer authentication as the default scheme when challenging unauthorized users.
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             }).AddJwtBearer(options =>
-            {
+            {   
                 options.RequireHttpsMetadata = false; // Allows tokens over HTTP (useful for local development).
                 options.SaveToken = true; // Saves the token inside the authentication properties after validation.
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -68,38 +83,18 @@ namespace Pet_caring_website
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true // Ensures the token has not expired.
                 };
-            });
-
-            // GOOGLE AUTHENTICATION
-            // Lấy danh sách Super-Admin từ appsettings.json
-            var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
-            // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
-            var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
-            var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-
-            if (string.IsNullOrEmpty(googleClientId) || string.IsNullOrEmpty(googleClientSecret))
-            {
-                throw new InvalidOperationException("Google Client ID or Secret is missing. Ensure it's set in appsettings.json or environment variables.");
-            }
-
-            // Cấu hình xác thực Google + Cookie
-            builder.Services.AddAuthentication()
+            })
             .AddCookie(options =>
             {
-                options.LoginPath = "/api/auth/login"; // Đường dẫn đăng nhập
-                options.LogoutPath = "/api/auth/logout"; // Đăng xuất
-                options.AccessDeniedPath = "/api/auth/access-denied"; // Khi bị từ chối
-                options.ExpireTimeSpan = TimeSpan.FromHours(2);
-                options.SlidingExpiration = true;
-                options.Cookie.HttpOnly = true; // Bảo mật cookie
-                options.Cookie.SameSite = SameSiteMode.None; // Để hoạt động với frontend React.js
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ gửi cookie qua HTTPS
+                options.Cookie.SameSite = SameSiteMode.None; // ✅ Prevents "correlation failed" error
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensures HTTPS usage
             })
             .AddGoogle(googleOptions =>
             {
                 googleOptions.ClientId = googleClientId;
                 googleOptions.ClientSecret = googleClientSecret;
                 googleOptions.CallbackPath = "/signin-google";
+                googleOptions.SaveTokens = true; // ✅ Stores authentication tokens
             });
 
             builder.Services.AddAuthorization();

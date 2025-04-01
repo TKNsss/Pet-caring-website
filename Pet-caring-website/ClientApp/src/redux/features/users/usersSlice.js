@@ -23,7 +23,7 @@ export const fetchUserProfile = createAsyncThunk(
 
       const response = await axios.get(`${API_BASE_URL}/user/profile`, {
         headers: { Authorization: `Bearer ${token}` },
-      }); // ✅ Success message
+      }); 
       return response.data;
     } catch (err) {
       return handleError(err, thunkAPI);

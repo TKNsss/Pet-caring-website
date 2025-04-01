@@ -11,7 +11,7 @@ import SearchBar from "./SearchBar/SearchBar.jsx";
 import RequestServiceBtn from "../../shares/RequestServiceBtn.jsx";
 import UserDropdown from "./UserDropdown/UserDropdown.jsx";
 import { useAnimate, motion } from "framer-motion";
-import { animateMenu, animateListItems } from "../../utils/motion.js";
+import { animateMenu, animateListItems } from "../../utils/motions";
 import { Outlet, Link } from "react-router-dom";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider.jsx";
 import { useSelector } from "react-redux";

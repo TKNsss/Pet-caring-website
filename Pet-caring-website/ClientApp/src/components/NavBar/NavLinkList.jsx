@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { hoveredTransition, hoveredEffect } from "../../utils/motion";
+import { hoveredTransition, hoveredEffect } from "../../utils/motions";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { FiLogIn } from "react-icons/fi";
 import SearchBar from "./SearchBar/SearchBar";

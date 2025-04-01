@@ -1,11 +1,13 @@
 import { useState, React } from "react";
-
 import { Link } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { userDropdownLinks } from "../../../constants";
+import { useDispatch } from "react-redux";
+import { logout } from "../../../redux/features/auth/authSlice";
+import { fetchUserProfile } from "../../../redux/features/users/usersSlice";
 
-const UserToggleSection = ({ open, links, user }) => {
+const UserToggleSection = ({ open, links, user, onLogout }) => {
   return (
     <div className="font-Poppins relative z-1000">
       {open && (
@@ -22,15 +24,25 @@ const UserToggleSection = ({ open, links, user }) => {
           </div>
 
           <ul className="text-txt-2 text-sm">
-            {links.map((link) => (
+            {links.map(({ label, href, icon: Icon }) => (
               <li
-                key={link.label}
+                key={label}
                 className="hover:bg-third hover:text-mdYellow group cursor-pointer p-3"
               >
-                <Link to={link.href} className="flex items-center">
-                  <link.icon className="text-txt-2 group-hover:text-mdYellow mr-3" />{" "}
-                  {link.label}
-                </Link>
+                {label === "Sign out" ? (
+                  <button
+                    onClick={onLogout}
+                    className="flex w-full items-center cursor-pointer text-left"
+                  >
+                    <Icon className="text-txt-2 group-hover:text-mdYellow mr-3" />
+                    {label}
+                  </button>
+                ) : (
+                  <Link to={href} className="flex items-center">
+                    <Icon className="text-txt-2 group-hover:text-mdYellow mr-3" />
+                    {label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
@@ -41,11 +53,21 @@ const UserToggleSection = ({ open, links, user }) => {
 };
 const UserDropdown = ({ user }) => {
   const [open, setOpen] = useState(false);
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    // returns a Redux action object with a type, payload, and other metadata.
+    const result = await dispatch(logout());
+
+    if (logout.fulfilled.match(result)) {
+      await dispatch(fetchUserProfile())
+    }
+  };
 
   return (
     <>
       <div
-        className="hover:text-primary cursor-pointer focus:text-primary ml-auto flex items-center"
+        className="hover:text-primary focus:text-primary ml-auto flex cursor-pointer items-center"
         onClick={() => setOpen((prevOpen) => !prevOpen)}
       >
         <FaUserCircle className="text-4xl" />
@@ -53,7 +75,12 @@ const UserDropdown = ({ user }) => {
           className={`text-xl transition duration-150 ease-out ${open ? "rotate-0" : "-rotate-180"} `}
         />
       </div>
-      <UserToggleSection open={open} links={userDropdownLinks} user={user}/>
+      <UserToggleSection
+        open={open}
+        links={userDropdownLinks}
+        user={user}
+        onLogout={handleLogout}
+      />
     </>
   );
 };

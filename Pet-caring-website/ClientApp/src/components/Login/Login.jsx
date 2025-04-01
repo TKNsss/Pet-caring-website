@@ -3,10 +3,16 @@ import { motion } from "framer-motion";
 import { loginImg, catLoginImg } from "../../constants";
 import { FcGoogle } from "react-icons/fc";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { login, register } from "../../redux/features/auth/authSlice";
+import {
+  login,
+  register,
+} from "../../redux/features/auth/authSlice";
 import { fetchUserProfile } from "../../redux/features/users/usersSlice";
+import { updateToken } from "../../redux/features/auth/authSlice";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Login = () => {
   // state
@@ -16,6 +22,7 @@ const Login = () => {
   const isDesktop = useMediaQueryContext();
   const navigate = useNavigate(); // navigate the user to a new page without the user interacting.
   const dispatch = useDispatch();
+  const location = useLocation();
   const status = useSelector((state) => state.auth.status);
   // animation
   const formAnimation = isDesktop
@@ -35,10 +42,20 @@ const Login = () => {
   // Once the state change is completed, React re-renders the component.
   // The useEffect hook detects that isRegistering changed and runs.
   // => navigate() is called after isRegistering updates, ensuring correct navigation.
-
   useEffect(() => {
     navigate(isRegistering ? "/register" : "/login");
   }, [isRegistering, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token");
+
+    if (token) {
+      dispatch(updateToken(token));
+      dispatch(fetchUserProfile());
+      navigate("/");
+    }
+  }, [location.search, navigate, dispatch]);
 
   const handleChange = (event) => {
     const { name, value, checked } = event.target;
@@ -68,14 +85,15 @@ const Login = () => {
         try {
           // The .unwrap() method in Redux Toolkit’s createAsyncThunk is used to extract the fulfilled value or throw an error if the promise is rejected.
           await dispatch(fetchUserProfile()).unwrap(); // Ensures profile is fetched before navigation
+          navigate("/");
+          setFormData(initialFormState);
         } catch (err) {
           // Logs the error from `rejectWithValue`
           console.error("Failed to fetch profile:", err);
         }
-        navigate("/");
       }
     } else {
-      await dispatch(
+      const resultAction = await dispatch(
         register({
           username: formData.username,
           email: formData.email,
@@ -83,8 +101,16 @@ const Login = () => {
           confirmPassword: formData.confirmPassword,
         }),
       );
+
+      if (register.fulfilled.match(resultAction)) {
+        setIsRegistering(false); // Slide back to login after successful registration
+        setFormData(initialFormState);
+      }
     }
-    setFormData(initialFormState);
+  };
+
+  const handleLoginWithGoogle = async () => {
+    window.location.href = `${API_BASE_URL}/auth/login-google`;
   };
 
   const handleTextChange = (text) => {
@@ -203,7 +229,10 @@ const Login = () => {
 
           {/* Social Signup */}
           <div className="mt-4">
-            <button className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border p-2 font-medium transition hover:bg-gray-100">
+            <button
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border p-2 font-medium transition hover:bg-gray-100"
+              onClick={handleLoginWithGoogle}
+            >
               <FcGoogle className="text-2xl" />
               Sign in with Google
             </button>
