@@ -5,12 +5,10 @@ import { FcGoogle } from "react-icons/fc";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  login,
-  register,
-} from "../../redux/features/auth/authSlice";
+import { login, register } from "../../redux/features/auth/authSlice";
 import { fetchUserProfile } from "../../redux/features/users/usersSlice";
 import { updateToken } from "../../redux/features/auth/authSlice";
+import { toast } from "react-toastify";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -53,6 +51,7 @@ const Login = () => {
     if (token) {
       dispatch(updateToken(token));
       dispatch(fetchUserProfile());
+      toast.success("Đăng nhập với Google thành công🎉");
       navigate("/");
     }
   }, [location.search, navigate, dispatch]);
