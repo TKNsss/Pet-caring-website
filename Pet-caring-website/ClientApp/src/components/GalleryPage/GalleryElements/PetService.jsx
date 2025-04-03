@@ -1,54 +1,9 @@
-import React from "react";
-import PetService_1 from "../../../assets/petService_1.jpg";
-import PetService_2 from "../../../assets/PetService_2.jpg";
-import PetService_3 from "../../../assets/PetService_3.jpg";
-import PetService_4 from "../../../assets/PetService_4.jpg";
-import PetService_5 from "../../../assets/PetService_5.jpg";
-import PetService_6 from "../../../assets/PetService_6.jpg";
-import { useState, useEffect } from "react";
+import { React, useState, useEffect } from "react";
 // 1) Import component LazyLoadImage từ thư viện react-lazy-load-image-component
 import { LazyLoadImage } from "react-lazy-load-image-component";
 // 2) Import file CSS cho hiệu ứng "blur"
 import "react-lazy-load-image-component/src/effects/blur.css";
-import { script } from "framer-motion/client";
-
-const categories = [
-  { key: "all", label: "All" },
-  { key: "dog-walking", label: "Dog Walking" },
-  { key: "dog-running", label: "Dog Running" },
-  { key: "dog-day-care", label: "Dog Day Care" },
-  { key: "dog-overnight-care", label: "Dog Overnight Care" },
-  { key: "pet-in-home", label: "Pet In-home Visit" },
-  { key: "pet-taxi", label: "Pet Taxi" },
-];
-
-const images = [
-  { src: PetService_6, category: "dog-walking" },
-  { src: PetService_6, category: "dog-walking" },
-  { src: PetService_6, category: "dog-walking" },
-  { src: PetService_2, category: "dog-running" },
-  { src: PetService_2, category: "dog-running" },
-  { src: PetService_2, category: "dog-running" },
-  { src: PetService_3, category: "dog-day-care" },
-  { src: PetService_3, category: "dog-day-care" },
-  { src: PetService_3, category: "dog-day-care" },
-  { src: PetService_1, category: "dog-overnight-care" },
-  { src: PetService_1, category: "dog-overnight-care" },
-  { src: PetService_1, category: "dog-overnight-care" },
-  { src: PetService_5, category: "pet-in-home" },
-  { src: PetService_5, category: "pet-in-home" },
-  { src: PetService_5, category: "pet-in-home" },
-  { src: PetService_1, category: "pet-taxi" },
-  { src: PetService_1, category: "pet-taxi" },
-  { src: PetService_1, category: "pet-taxi" },
-  { src: PetService_4, category: "dog-running" },
-  { src: PetService_4, category: "dog-running" },
-  { src: PetService_4, category: "dog-running" },
-  { src: PetService_4, category: "dog-running" },
-];
-// 3) Mảng ảnh mẫu (thay đường dẫn thành ảnh thật của bạn)
-
-// 4) Component chính
+import { categories, images } from "../../../constants";
 
 const PetService = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -93,49 +48,52 @@ const PetService = () => {
       ? images
       : images.filter((img) => img.category === selectedCategory);
   return (
-    <div className="mt-[86px] p-15">
-      <h3 className="mb-11 text-3xl font-bold text-black">
-        Your Pet Is Our{" "}
-        <span className="text-3xl font-bold text-[#6F32BE]">Family</span> Member
-      </h3>
+    <div className="web-container @container">
+      <div className="mt-[86px] mb-8 px-[2.25rem]">
+        <h3 className="mb-11 text-3xl font-bold text-black">
+          Your Pet Is Our{" "}
+          <span className="text-3xl font-bold text-[#6F32BE]">Family</span>{" "}
+          Member
+        </h3>
 
-      {/* Thanh chọn danh mục */}
+        {/* Thanh chọn danh mục */}
 
-      <div className="mb-11 flex space-x-4 overflow-x-auto whitespace-nowrap xl:justify-between">
-        {categories.map((cat) => (
-          <button
-            key={cat.key}
-            className={`font-Montserrat cursor-pointer rounded-md px-4 py-2 text-[23px] font-bold ${
-              selectedCategory === cat.key
-                ? "text-[#7759CC] underline"
-                : "text-[#AFB1B6]"
-            }`}
-            onClick={() => setSelectedCategory(cat.key)}
-          >
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      <div>
-        <div className="relative lg:grid lg:grid-cols-3 lg:gap-4">
-          {filteredImages.slice(0, visibleCount).map((img, idx) => (
-            <img
-              key={idx}
-              src={img.src}
-              alt={`Image ${idx}`}
-              effect="blur"
-              className="mb-8 rounded-lg shadow-md"
-            />
+        <div className="mb-11 flex space-x-4 overflow-x-auto whitespace-nowrap xl:justify-between">
+          {categories.map((cat) => (
+            <button
+              key={cat.key}
+              className={`font-Monserrat cursor-pointer rounded-md px-4 py-2 text-lg font-bold ${
+                selectedCategory === cat.key
+                  ? "text-third underline"
+                  : "text-navBorder"
+              }`}
+              onClick={() => setSelectedCategory(cat.key)}
+            >
+              {cat.label}
+            </button>
           ))}
         </div>
-        <div className="sticky bottom-[50px] left-0 mt-6 flex justify-center">
-          <button
-            onClick={toggleImages}
-            className="rounded-[25px] border-2 border-[#7759CC] px-6 py-2 font-medium text-[#7759CC] transition hover:bg-[#7759CC] hover:text-white"
-          >
-            {isExpanded ? "Show Less" : "Load More"}
-          </button>
+
+        <div>
+          <div className="relative grid justify-items-center grid-cols-1 lg:grid-cols-3 lg:gap-4">
+            {filteredImages.slice(0, visibleCount).map((img, idx) => (
+              <img
+                key={idx}
+                src={img.src}
+                alt={`Image ${idx}`}
+                effect="blur"
+                className="mb-8 rounded-lg shadow-md @max-5xl:w-[500px]"
+              />
+            ))}
+          </div>
+          <div className="sticky bottom-[50px] left-0 mt-6 flex justify-center">
+            <button
+              onClick={toggleImages}
+              className="rounded-[25px] border-2 border-third px-6 py-2 font-medium text-third transition hover:bg-third hover:text-white"
+            >
+              {isExpanded ? "Show Less" : "Load More"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -31,16 +31,16 @@ const App = () => {
       <Routes>
         <Route path="/" element={<NavBar />}>
           <Route index element={<Home />} />
+          <Route path="/about/why-choose-us" element={<Whpc />} />
+          <Route path="/about/gallery" element={<GalleryPage />} />
+          <Route path="/OsDogwalk" element={<OsDogwalk />} />
+          <Route path="/OsDogrunning" element={<OsDogrunning />} />
+          <Route path="/OsDogboarding" element={<OsDogboarding />} />
+          <Route path="/OsDogOn" element={<OsDogOn />} />
+          <Route path="/ReAskQue" element={<ReAskQue />} />
         </Route>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Login />} />
-        <Route path="/gallery" element={<GalleryPage />} />
-        <Route path="/whpc" element={<Whpc />} />
-        <Route path="/OsDogwalk" element={<OsDogwalk />} />
-        <Route path="/OsDogrunning" element={<OsDogrunning />} />
-        <Route path="/OsDogboarding" element={<OsDogboarding />} />
-        <Route path="/OsDogOn" element={<OsDogOn />} />
-        <Route path="/ReAskQue" element={<ReAskQue />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {/* toast - display notifications */}

@@ -1,23 +1,32 @@
 import React from "react";
-import Header from "./WhpcElements/header";
-import Introduction from "./WhpcElements/introduction";
-import Introduction2 from "./WhpcElements/introduction2";
-import Quality from "./WhpcElements/quality";
-import Reviews from "./WhpcElements/reviews";
-import Gallery from "./WhpcElements/gallery";
-import Footer from "./WhpcElements/footer";
-import { header } from "framer-motion/client";
+import Header from "../../shares/Header";
+import Introduction from "./WhpcElements/Introduction";
+import Introduction2 from "./WhpcElements/Introduction2";
+import Quality from "./WhpcElements/Quality";
+import Reviews from "../../shares/Reviews";
+import Gallery from "../../shares/Gallery";
+import Footer from "../../shares/Footer";
+import { whpcHeaderImg } from "../../constants";
+import { footerWhpcLeft, footerWhpcRight } from "../../constants";
 
 const Whpc = () => {
+  const petImgs = [footerWhpcLeft, footerWhpcRight];
+
   return (
     <>
-      <Header />;
+      <Header
+        id={"Whpc"}
+        title={"FLEXIBLE AND RELIABLE CARE FOR YOUR PET"}
+        subTitle={"Experienced, Animal-loving Pet Sitters"}
+        headerImg={whpcHeaderImg}
+        bgColor={"bg-bgYellow"}
+      />
       <Introduction />
       <Quality />
       <Introduction2 />
-      <Reviews />
+      <Reviews bgColor={"bg-lightYellow"} />
       <Gallery />
-      <Footer />
+      <Footer title={"Ready to use our services?"} petImgs={petImgs} />
     </>
   );
 };

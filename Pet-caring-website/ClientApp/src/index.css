@@ -1,9 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Chewy&display=swap");
 @import "tailwindcss";
 
 html {
   overflow: scroll;
 }
+
 html::-webkit-scrollbar {
   display: none;
 }
@@ -20,11 +20,13 @@ html::-webkit-scrollbar {
   --color-primary: #5a3bb3;
   --color-secondary: #e4813a;
   --color-third: #7759cc;
+  --color-fourth: #7030C3;
   --color-hoverPurple: #8954cc;
   --color-txt-1: #3e3218;
   --color-txt-2: #33363f;
   --color-darkYellow: #f7ce72;
   --color-mdYellow: #fbe2ac;
+  --color-bgYellow: #FFE99A;
   --color-lightYellow: #fdf3dc;
   --color-lavender: #ebe8fc;
   --color-navBorder: #afb1b6;

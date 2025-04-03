@@ -39,7 +39,7 @@ const NavLinkList = ({ links, scope, isDesktop, user }) => {
 
   return (
     <ul
-      className="font-Poppins bg-lavender @3xl:bg-navBg border-navBorder absolute right-0 flex flex-col border-2 @3xl:static @3xl:flex-row @3xl:justify-center @3xl:gap-12 @3xl:border-none @3xl:py-5"
+      className="font-Poppins bg-lavender @3xl:bg-navBg border-navBorder absolute right-0 flex flex-col border-2 @3xl:static @3xl:flex-row @3xl:justify-center @3xl:gap-12 @3xl:border-none @3xl:py-5 z-1000"
       ref={scope}
     >
       {links.map((link) => (
