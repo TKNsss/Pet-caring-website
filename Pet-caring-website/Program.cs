@@ -1,5 +1,9 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Pet_caring_website.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace Pet_caring_website
 {
@@ -12,58 +16,113 @@ namespace Pet_caring_website
             // get connection string from appsettings.Development.json
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-            // Add services to the container.
-            builder.Services.AddControllersWithViews();
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new InvalidOperationException("Connection string is missing in appsettings.json");
+            }
 
-            // Register the database context (DbContext) with the connection string 
-            builder.Services.AddEntityFrameworkNpgsql().AddDbContext<AppDbContext>(options =>
+            // ADD SERVICES:
+            // Registers controllers in the application to handle API requests.
+            builder.Services.AddControllers();
+            // Đăng ký DbContext với PostgreSQL
+            builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
+
+            // CONFIGURE CORS
+            var corsPolicy = "_UIAllowSpecificOrigins"; // Define a CORS policy name
+
+            // allows requests from http://localhost:5173.
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(name: corsPolicy, policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173") // Allow only your frontend
+                          .AllowAnyHeader()  // Allow any headers (e.g., Authorization, Content-Type)
+                          .AllowAnyMethod()  // Allow GET, POST, PUT, DELETE, etc.
+                          .AllowCredentials(); // ✅ Allow credentials (cookies, auth headers)
+                });
+            });
+
+            // Configure Authentication & JWT 
+            var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.
+            // Converts the key into a byte array(required for cryptographic operations).
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+
+            // Lấy danh sách Super-Admin từ appsettings.json
+            var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
+           
+            // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
+            var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
+            var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+            if (string.IsNullOrEmpty(googleClientId) || string.IsNullOrEmpty(googleClientSecret))
+            {
+                throw new InvalidOperationException("Google Client ID or Secret is missing. Ensure it's set in appsettings.json or environment variables.");
+            }
+
+            // configures the authentication system in ASP.NET Core
+            // => This tells ASP.NET Core to automatically validate JWT tokens when users access secured endpoints.
+            builder.Services.AddAuthentication(options =>
+            {
+                // Sets JWT Bearer authentication as the default scheme for authenticating users.
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                // Defines JWT Bearer authentication as the default scheme when challenging unauthorized users.
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options =>
+            {   
+                options.RequireHttpsMetadata = false; // Allows tokens over HTTP (useful for local development).
+                options.SaveToken = true; // Saves the token inside the authentication properties after validation.
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true, // Ensures the token is signed using a valid secret key.
+                    IssuerSigningKey = new SymmetricSecurityKey(key), // Uses the secret key (Key) from appsettings.json for signature validation.
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    ValidateLifetime = true // Ensures the token has not expired.
+                };
+            })
+            .AddCookie(options =>
+            {
+                options.Cookie.SameSite = SameSiteMode.None; // ✅ Prevents "correlation failed" error
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensures HTTPS usage
+            })
+            .AddGoogle(googleOptions =>
+            {
+                googleOptions.ClientId = googleClientId;
+                googleOptions.ClientSecret = googleClientSecret;
+                googleOptions.CallbackPath = "/signin-google";
+                googleOptions.SaveTokens = true; // ✅ Stores authentication tokens
+            });
+
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
 
-            // Test database connection
-            using (var scope = app.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                // ILogger<Program>: This is used to log messages to the console or a logging provider.
-                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-                try
-                {
-                    // check the status of the database connection
-                    var canConnect = dbContext.Database.CanConnect();
-
-                    if (canConnect)
-                    {
-                        logger.LogInformation("Successfully connected to the database!");
-                    }
-                    else
-                    {
-                        logger.LogError("Failed to connect to the database.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "An error occurred while connecting to the database.");
-                }
-            }
-
-            // Configure the HTTP request pipeline.
+            // Middleware xử lý lỗi cho production
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
-            app.UseHttpsRedirection();
+            app.UseCors(corsPolicy);
             app.UseStaticFiles();
+            // Enables endpoint routing.
             app.UseRouting();
+            // Ensures authentication and authorization are applied.
+            app.UseAuthentication();
             app.UseAuthorization();
+
+            // Định tuyến API
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
 
+            // Maps API controllers to handle HTTP requests.
+            app.MapControllers();
             app.Run();
         }
     }

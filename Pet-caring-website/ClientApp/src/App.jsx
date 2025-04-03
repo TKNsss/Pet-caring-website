@@ -1,39 +1,64 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { React, useEffect } from "react";
+import GalleryPage from "./components/GalleryPage/GalleryPage";
+import Whpc from "./components/whpc/Whpc";
+import { Routes, Route } from "react-router-dom";
+// components
+import NavBar from "./components/NavBar/NavBar";
+import Login from "./components/Login/Login";
+import NotFound from "./components/NotFound/NotFound";
+import Home from "./components/Home/Home";
+import OsDogwalk from "./components/Os_dogwalk/OsDogwalk";
+import OsDogrunning from "./components/Os_dogrun/OsDogrun";
+import OsDogboarding from "./components/Os_dogboard/Os_dogboard";
+import OsDogOn from "./components/Os_dogOn/OsDogOn";
+import ReAskQue from "./components/ReAskQue/ReAskQue";
+import { ToastContainer, Flip } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserProfile } from "./redux/features/users/usersSlice";
 
-// Hello word!!!
+const App = () => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.users);
 
-function App() {
-  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!user) {
+      dispatch(fetchUserProfile());
+    }
+  }, [dispatch, user]);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1 className="text-decoration-underline flex bg-amber-600 text-3xl text-red-200">
-        Vite + React
-      </h1>
-      <div className="card text-primary-500 bg-pink-700">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit in <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <Routes>
+        <Route path="/" element={<NavBar />}>
+          <Route index element={<Home />} />
+          <Route path="/about/why-choose-us" element={<Whpc />} />
+          <Route path="/about/gallery" element={<GalleryPage />} />
+          <Route path="/OsDogwalk" element={<OsDogwalk />} />
+          <Route path="/OsDogrunning" element={<OsDogrunning />} />
+          <Route path="/OsDogboarding" element={<OsDogboarding />} />
+          <Route path="/OsDogOn" element={<OsDogOn />} />
+          <Route path="/ReAskQue" element={<ReAskQue />} />
+        </Route>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Login />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      {/* toast - display notifications */}
+      <ToastContainer
+        position="bottom-left"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Flip}
+      />
     </>
   );
-}
+};
 
 export default App;
