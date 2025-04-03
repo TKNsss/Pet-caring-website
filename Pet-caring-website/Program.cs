@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Pet_caring_website.Models;
+using Pet_caring_website.Services;
 
 namespace Pet_caring_website
 {
@@ -24,6 +26,13 @@ namespace Pet_caring_website
             // ADD SERVICES:
             // Registers controllers in the application to handle API requests.
             builder.Services.AddControllers();
+
+            // Đọc cấu hình EmailSetting từ appsettings.json
+            builder.Services.Configure<EmailService>(builder.Configuration.GetSection("EmailSettings"));
+            builder.Services.AddMemoryCache(); // Đăng ký IMemoryCache
+            builder.Services.AddSingleton<EmailService>(); // Đăng ký EmailService
+            builder.Services.AddScoped<OtpService>(); // Đăng ký OtpService
+
             // Đăng ký DbContext với PostgreSQL
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString));
@@ -43,6 +52,7 @@ namespace Pet_caring_website
                 });
             });
 
+
             // Configure Authentication & JWT 
             var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.
             // Converts the key into a byte array(required for cryptographic operations).
@@ -50,7 +60,7 @@ namespace Pet_caring_website
 
             // Lấy danh sách Super-Admin từ appsettings.json
             var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
-           
+
             // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
             var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
             var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
@@ -68,9 +78,10 @@ namespace Pet_caring_website
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 // Defines JWT Bearer authentication as the default scheme when challenging unauthorized users.
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
-            {   
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme; 
+            })
+            .AddJwtBearer(options =>
+            {
                 options.RequireHttpsMetadata = false; // Allows tokens over HTTP (useful for local development).
                 options.SaveToken = true; // Saves the token inside the authentication properties after validation.
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -83,12 +94,14 @@ namespace Pet_caring_website
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true // Ensures the token has not expired.
                 };
+
             })
             .AddCookie(options =>
             {
                 options.Cookie.SameSite = SameSiteMode.None; // ✅ Prevents "correlation failed" error
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensures HTTPS usage
-            })
+
+            }) 
             .AddGoogle(googleOptions =>
             {
                 googleOptions.ClientId = googleClientId;

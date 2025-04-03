@@ -1,20 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Text;
+using System.Security.Cryptography;
 using Pet_caring_website.Data;
 using Pet_caring_website.Models;
-using Pet_caring_website.DTOs;
-using BCrypt.Net;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Pet_caring_website.Services;
+using Pet_caring_website.DTOs.Auth;
 
 namespace Pet_caring_website.Controllers
 {
-    // This attribute marks the class as an API controller.
     [ApiController]
     // defines the route for the controller
     [Route("api/v1/[controller]")]
@@ -22,26 +23,28 @@ namespace Pet_caring_website.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly EmailService _emailService;
+        private readonly OtpService _otpService;
         private readonly IConfiguration _configuration;
 
-        // The AppDbContext is injected into the controller using Dependency Injection
-        // This allows us to interact with the database.
-        public AuthController(AppDbContext context, IConfiguration configuration)
+        public AuthController(AppDbContext context, EmailService emailService, IConfiguration configuration, OtpService otpService)
         {
             _context = context;
+            _emailService = emailService;
+            _otpService = otpService;
             _configuration = configuration;
         }
 
-        // Đăng nhập bằng Google
+        // Đăng nhập Google
         [HttpGet("login-google")]
         public IActionResult LoginWithGoogle()
         {
-            var redirectUrl = Url.Action(nameof(GoogleResponse), "Auth");
+            var redirectUrl = Url.Action(nameof(GoogleResponse), "Auth", null, Request.Scheme);
             var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
 
-        // Xử lý callback từ Google
+        // Xử lý phản hồi từ Google
         [HttpGet("google-response")]
         public async Task<IActionResult> GoogleResponse()
         {
@@ -63,6 +66,7 @@ namespace Pet_caring_website.Controllers
             {
                 user = new User
                 {
+
                     UserId = Guid.NewGuid(),
                     UserName = name ?? email,
                     Email = email.ToLower(),
@@ -81,6 +85,7 @@ namespace Pet_caring_website.Controllers
                 }
             }
 
+            // Tạo JWT Token
             var token = GenerateJwtToken(user);
             var fe = _configuration["Jwt:Audience"];
             var frontendUrl = $"{fe}/login?token={token}";
@@ -88,43 +93,61 @@ namespace Pet_caring_website.Controllers
             return Redirect(frontendUrl);
         }
 
-        // Xử lý yêu cầu đăng ký
+
+        // Đăng ký người dùng xác thực gmail với Otp
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
+
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return BadRequest("Email đã tồn tại");
 
-            var newUser = new User
+            // Nếu chưa có OTP được cung cấp, gửi OTP qua email
+            if (string.IsNullOrEmpty(request.OtpCode))
             {
-                UserId = Guid.NewGuid(),
-                UserName = request.UserName,
-                Email = request.Email,
-                Password = HashPassword(request.Password),
-                Role = "client"
-            };
-
-            try
-            {
-                _context.Users.Add(newUser);
-                await _context.SaveChangesAsync();
-                return Ok(new { message = "Đăng ký thành công" });
+                // Tạo OTP
+                var otp = _otpService.GenerateOtp(request.Email);
+                // Gửi OTP qua email với subject "register"
+                _emailService.SendOtpEmail(request.Email, otp, "register");
+                return Ok("Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra email để hoàn tất đăng ký.");
             }
-            catch (DbUpdateException ex)
+            else
             {
-                return StatusCode(500, new { message = "Lỗi khi lưu thông tin người dùng", error = ex.InnerException?.Message ?? ex.Message });
+                // Nếu đã có OTP, xác thực OTP
+                if (!_otpService.VerifyOtp(request.Email, request.OtpCode))
+                    return BadRequest("Mã OTP không hợp lệ hoặc đã hết hạn.");
+
+                var newUser = new User
+                {
+                    UserId = Guid.NewGuid(),
+                    UserName = request.UserName,
+                    Email = request.Email,
+                    Password = PasswordService.HashPassword(request.Password),
+                    Role = "client"
+                };
+
+                try
+                {
+                    _context.Users.Add(newUser);
+                    await _context.SaveChangesAsync();
+                    return Ok("Đăng ký thành công");
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, $"Lỗi khi lưu thông tin người dùng: {ex.Message}");
+                }
             }
         }
 
-        // Xử lý yêu cầu đăng nhập
+        // Đăng nhập bằng email & password
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var existingUser = await _context.Users
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
 
-            if (existingUser == null || !VerifyPassword(request.Password, existingUser.Password))
-                return Unauthorized(new { message = "Thông tin đăng nhập không chính xác!" });
+            if (existingUser == null || !PasswordService.VerifyPassword(request.Password, existingUser.Password))
+                return Unauthorized("Thông tin đăng nhập không chính xác");
 
             var token = GenerateJwtToken(existingUser);
 
@@ -141,6 +164,7 @@ namespace Pet_caring_website.Controllers
             });
         }
 
+        // API lấy thông tin user
         [HttpGet("user-info")]
         [Authorize]
         public async Task<IActionResult> GetUserInfo()
@@ -160,16 +184,17 @@ namespace Pet_caring_website.Controllers
             return Ok(new { message = "Đăng xuất thành công!" });
         }
 
-        public static string HashPassword(string password)
-        {
-            return BCrypt.Net.BCrypt.HashPassword(password);
-        }
+        //public static string HashPassword(string password)
+        //{
+        //    return BCrypt.Net.BCrypt.HashPassword(password);
+        //}
 
-        public static bool VerifyPassword(string password, string hashedPassword)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
-        }
+        //public static bool VerifyPassword(string password, string hashedPassword)
+        //{
+        //    return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+        //}
 
+        // Tạo JWT Token
         private string GenerateJwtToken(User user)
         {
             // Retrieves the secret key(Jwt:Key) from appsettings.json.
@@ -207,45 +232,92 @@ namespace Pet_caring_website.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // Cấp quyền admin
-        //[HttpPost("grant-admin/{userId}")]
-        //public async Task<IActionResult> GrantAdmin(Guid userId)
-        //{
-        //    var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        //    var requestingUser = await _context.Users.FindAsync(Guid.Parse(requestingUserId));
+        // Gán quyền cho user
+        [HttpPost("assign-role")]
+        [Authorize]
+        public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request)
+        {
+            // Lấy email Super Admin từ appsettings.json
+            var superAdminEmail = _configuration["SuperAdmins:Email"];
 
-        //    if (requestingUser == null || !requestingUser.is_admin)
-        //        return Unauthorized("Bạn không có quyền cấp admin");
+            // Lấy email của user đang đăng nhập
+            var loggedInUserEmail = User.FindFirstValue(ClaimTypes.Email);
 
-        //    var user = await _context.Users.FindAsync(userId);
-        //    if (user == null) return NotFound("Không tìm thấy người dùng");
+            // Kiểm tra user có phải Super Admin không
+            if (loggedInUserEmail == null || loggedInUserEmail != superAdminEmail)
+            {
+                return Forbid(); // Trả về lỗi 403 Forbidden
+            }
 
-        //    user.is_admin = true;
-        //    await _context.SaveChangesAsync();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                return NotFound(new { message = "Người dùng không tồn tại!" });
 
-        //    return Ok($"Người dùng {user.user_name} đã được cấp quyền admin");
-        //}
+            // Chỉ cho phép gán các quyền hợp lệ
+            var validRoles = new List<string> { "admin", "vet", "client" };
+            if (!validRoles.Contains(request.Role.ToLower()))
+                return BadRequest(new { message = "Quyền không hợp lệ! Chỉ chấp nhận: admin, vet, client" });
 
-        // Thu hồi quyền admin
-        //[HttpPost("revoke-admin/{userId}")]
-        //public IActionResult RevokeAdmin(Guid userId)
-        //{
-        //    var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        //    var requestingUser = _context.Users.Find(Guid.Parse(requestingUserId));
+            user.Role = request.Role.ToLower();
+            await _context.SaveChangesAsync();
 
-        //    if (requestingUser == null || !requestingUser.is_admin)
-        //        return Unauthorized("Bạn không có quyền thực hiện thao tác này");
+            return Ok(new { message = $"Đã gán quyền '{user.Role}' cho {user.Email}" });
+        }
 
-        //    var user = _context.Users.Find(userId);
-        //    if (user == null) return NotFound("Không tìm thấy người dùng");
+        // Gửi mã OTP để đặt lại mật khẩu
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email) || !IsValidEmail(request.Email))
+                return BadRequest("Email không hợp lệ.");
 
-        //    if (!user.is_admin)
-        //        return BadRequest("Người dùng này không phải admin");
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                return NotFound("Email không tồn tại trong hệ thống.");
 
-        //    user.is_admin = false;
-        //    _context.SaveChanges();
+            try
+            {
+                var otp = _otpService.GenerateOtp(request.Email);
+                _emailService.SendOtpEmail(request.Email, otp, "reset-password");
 
-        //    return Ok($"Quyền admin của {user.user_name} đã bị thu hồi");
-        //}
+                return Ok(new { message = "Mã OTP đã được gửi đến email của bạn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi gửi email: {ex.Message}");
+            }
+        }
+
+        // Đặt lại mật khẩu sau khi xác thực OTP
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (!_otpService.VerifyOtp(request.Email, request.OtpCode))
+                return BadRequest("Mã OTP không hợp lệ hoặc đã hết hạn.");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null) return NotFound("Email không tồn tại trong hệ thống.");
+
+            user.Password = PasswordService.HashPassword(request.NewPassword);
+            await _context.SaveChangesAsync();
+
+            return Ok("Mật khẩu đã được cập nhật thành công.");
+        }
+
+        // Kiểm tra email có đúng định dạng không
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
     }
 }
+    
