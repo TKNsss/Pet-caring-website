@@ -3,12 +3,13 @@ import { motion } from "framer-motion";
 import { loginImg, catLoginImg } from "../../constants";
 import { FcGoogle } from "react-icons/fc";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { login, register } from "../../redux/features/auth/authSlice";
 import { fetchUserProfile } from "../../redux/features/users/usersSlice";
 import { updateToken } from "../../redux/features/auth/authSlice";
 import { toast } from "react-toastify";
+import { FaArrowLeft } from "react-icons/fa";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -118,7 +119,7 @@ const Login = () => {
 
   return (
     <div className="bg-lavender flex min-h-screen items-center justify-center p-4">
-      <div className="relative flex max-h-[40.625rem] w-full max-w-4xl bg-white shadow-lg">
+      <div className="relative flex w-full max-w-4xl bg-white shadow-lg">
         {/* Animated Form Section */}
         <motion.div
           className={`relative mr-auto w-full ${isRegistering ? "p-5 py-4" : "p-8"} md:w-1/2`}
@@ -126,7 +127,7 @@ const Login = () => {
           animate={formAnimation}
           transition={{ duration: 0.4, ease: "easeInOut" }}
         >
-          <div className="absolute -top-43 -left-5 md:hidden">
+          <div className="absolute -top-35 -left-6 md:hidden">
             <img src={catLoginImg} className="h-70 w-70" />
           </div>
 
@@ -135,6 +136,14 @@ const Login = () => {
           >
             {isRegistering ? "Create Your Account" : "Welcome Back"}
           </h2>
+
+          <Link
+            to="/"
+            className="text-third flex justify-center items-center gap-1 text-sm hover:underline"
+          >
+            <FaArrowLeft className="text-sm" />
+            back to home
+          </Link>
 
           <form
             className={`${isRegistering ? "mt-4" : "mt-6"}`}
@@ -196,18 +205,26 @@ const Login = () => {
               </div>
             )}
 
-            <div className="mt-4 flex items-center">
-              <input
-                type="checkbox"
-                id="showPass"
-                className="mr-2"
-                onChange={handleChange}
-                name="showPass"
-                checked={showPassword}
-              />
-              <label htmlFor="showPass" className="text-sm text-gray-600">
-                Show password
-              </label>
+            <div className="mt-4 flex items-center justify-between">
+              <div>
+                <input
+                  type="checkbox"
+                  id="showPass"
+                  className="mr-2"
+                  onChange={handleChange}
+                  name="showPass"
+                  checked={showPassword}
+                />
+                <label htmlFor="showPass" className="text-sm text-gray-600">
+                  Show password
+                </label>
+              </div>
+              <Link
+                to="/forgot-password"
+                className="hover:text-third text-sm text-gray-600 hover:underline"
+              >
+                Forgot password?
+              </Link>
             </div>
 
             <button

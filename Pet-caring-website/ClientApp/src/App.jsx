@@ -15,6 +15,8 @@ import ReAskQue from "./components/ReAskQue/ReAskQue";
 import { ToastContainer, Flip } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserProfile } from "./redux/features/users/usersSlice";
+import UserProfile from "./components/UserProfile/UserProfile";
+import ForgotPassword from "./components/Login/ForgotPassword/ForgotPassword";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -29,20 +31,35 @@ const App = () => {
   return (
     <>
       <Routes>
+        {/* Main navigation with nested routes */}
         <Route path="/" element={<NavBar />}>
           <Route index element={<Home />} />
-          <Route path="/about/why-choose-us" element={<Whpc />} />
-          <Route path="/about/gallery" element={<GalleryPage />} />
-          <Route path="/OsDogwalk" element={<OsDogwalk />} />
-          <Route path="/OsDogrunning" element={<OsDogrunning />} />
-          <Route path="/OsDogboarding" element={<OsDogboarding />} />
-          <Route path="/OsDogOn" element={<OsDogOn />} />
-          <Route path="/ReAskQue" element={<ReAskQue />} />
+          <Route path="about">
+            <Route path="why-choose-us" element={<Whpc />} />
+            <Route path="gallery" element={<GalleryPage />} />
+          </Route>
+
+          <Route path="Os">
+            <Route path="dogwalk" element={<OsDogwalk />} />
+            <Route path="dogrunning" element={<OsDogrunning />} />
+            <Route path="dogboarding" element={<OsDogboarding />} />
+            <Route path="dogon" element={<OsDogOn />} />
+          </Route>
+          <Route path="ReAskQue" element={<ReAskQue />} />
         </Route>
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Login />} />
+
+        {/* Authentication routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* User profile */}
+        <Route path="/user/profile" element={<UserProfile />} />
+
+        {/* 404 Not Found */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+
       {/* toast - display notifications */}
       <ToastContainer
         position="bottom-left"
@@ -56,6 +73,7 @@ const App = () => {
         pauseOnHover
         theme="light"
         transition={Flip}
+        toastStyle={{ backgroundColor: "#f1f1f1" }}
       />
     </>
   );

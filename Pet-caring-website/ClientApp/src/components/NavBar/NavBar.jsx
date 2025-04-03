@@ -55,7 +55,7 @@ const NavBar = () => {
           <div className="text-txt-2 hidden @3xl:flex @3xl:items-center @3xl:gap-4">
             {user ? (
               <>
-                <RequestServiceBtn txtColor={"text-white"} paddingX={"px-6"}/>
+                <RequestServiceBtn navBar={"NavBar"} bgColor={"bg-secondary"} txtColor={"text-white"} paddingX={"px-6"}/>
                 <UserDropdown user={user} />
               </>
             ) : (

@@ -32,6 +32,7 @@ html::-webkit-scrollbar {
   --color-navBorder: #afb1b6;
   --color-navBg: #f6f4f4;
   --color-navSubBg: #8459cc;
+  --color-disable: #d3d3d3;
 }
 
 @layer base {
@@ -56,7 +57,7 @@ html::-webkit-scrollbar {
     @apply mx-auto w-full;
 
     @apply [@media(width>=40rem)]:max-w-full; /* 640px */
-    @apply [@media(width>=48rem)]:max-w-[51.25rem]; /* 768px */
+    @apply [@media(width>=48rem)]:max-w-[60.25rem]; /* 768px */
     @apply [@media(width>=64rem)]:max-w-[64rem]; /* 1024px */
     @apply [@media(width>=80rem)]:max-w-[80rem]; /* 1280px */
     @apply [@media(width>=96rem)]:max-w-[96rem]; /* 1536px */

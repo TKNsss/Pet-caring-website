@@ -13,10 +13,11 @@ const RequestServiceBtn = ({
   iconColor,
   txtColor,
   paddingX,
+  navBar,
 }) => {
   return (
     <motion.button
-      className={`font-chewy ${bgColor} rounded-full ${paddingX === "px-24" ? `${paddingX} @max-lg:px-6` : paddingX} py-3 text-lg font-thin ${txtColor} shadow-lg @5xl:inline-block`}
+      className={`font-chewy ${bgColor} rounded-full ${paddingX === "px-24" ? `${paddingX} @max-lg:px-6` : paddingX} cursor-pointer py-3 text-lg font-thin ${txtColor} shadow-lg ${navBar && "@max-4xl:hidden"}`}
       whileHover={buttonHoverEffect}
       whileTap={buttonTapEffect}
       transition={buttonTransition}
