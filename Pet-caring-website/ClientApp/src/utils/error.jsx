@@ -1,7 +1,7 @@
 import { toast } from "react-toastify";
 
 const handleError = (err, thunkAPI) => {
-  let errorMessage = "Something went wrong!";
+  let errorMessage = `Something went wrong! \n${err.message}`;
 
   if (err.response?.data) {
     if (typeof err.response.data === "string") {

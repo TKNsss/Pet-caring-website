@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 
 namespace Pet_caring_website.Services
 {
@@ -23,9 +22,14 @@ namespace Pet_caring_website.Services
         {
             if (_cache.TryGetValue(email, out string? storedOtp))
             {
-                return storedOtp == otp;
+                if (storedOtp == otp)
+                {
+                    _cache.Remove(email);  // ✅ Remove OTP after successful verification
+                    return true;
+                }
             }
             return false;
         }
+
     }
 }

@@ -1,4 +1,9 @@
 import { React, useEffect } from "react";
+import Modal from "react-modal";
+
+// Required: Bind modal to your root app element
+Modal.setAppElement('#root'); // ID from index.html
+
 import GalleryPage from "./components/GalleryPage/GalleryPage";
 import Whpc from "./components/whpc/Whpc";
 import { Routes, Route } from "react-router-dom";
@@ -16,7 +21,6 @@ import { ToastContainer, Flip } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserProfile } from "./redux/features/users/usersSlice";
 import UserProfile from "./components/UserProfile/UserProfile";
-import ForgotPassword from "./components/Login/ForgotPassword/ForgotPassword";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -51,7 +55,6 @@ const App = () => {
         {/* Authentication routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* User profile */}
         <Route path="/user/profile" element={<UserProfile />} />

@@ -33,22 +33,35 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
   "auth/register",
-  async ({ username, email, password, confirmPassword }, thunkAPI) => {
+  async ({ username, email, password, confirmPassword, otpCode }, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/register`, {
+      // Build payload object
+      const payload = {
         username,
         email,
         password,
         confirmPassword,
-      });
+      };
+
+      // Add OTP only if it's provided
+      if (otpCode) {
+        payload.otpCode = otpCode;
+      }
+
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/register`,
+        payload,
+      );
+
       toast.success(`${response.data.message} 🎉`);
+      return response.data;
     } catch (err) {
       return handleError(err, thunkAPI);
     }
   },
 );
 
-export const logout = createAsyncThunk("auth/logout", async () => {
+export const logout = createAsyncThunk("auth/logout", async (_, thunkAPI) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/logout`);
     localStorage.removeItem("token");
@@ -58,6 +71,36 @@ export const logout = createAsyncThunk("auth/logout", async () => {
     return handleError(err, thunkAPI);
   }
 });
+
+export const forgotPassword = createAsyncThunk(
+  "auth/forgotPassword",
+  async ({ email }, thunkAPI) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/forgot-password`,
+        { email },
+      );
+      toast.success(`${response.data.message} 🎉`);
+    } catch (err) {
+      return handleError(err, thunkAPI);
+    }
+  },
+);
+
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async ({ email, otpCode }, thunkAPI) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
+        email,
+        otpCode,
+      });
+      toast.success(`${response.data.message} 🎉`);
+    } catch (err) {
+      return handleError(err, thunkAPI);
+    }
+  },
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -89,9 +132,6 @@ const authSlice = createSlice({
       })
       .addCase(register.pending, (state) => {
         state.status = "loading";
-      })
-      .addCase(register.fulfilled, (state) => {
-        state.status = "succeeded";
       })
       .addCase(register.rejected, (state, action) => {
         state.status = "failed";

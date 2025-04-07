@@ -1,8 +1,5 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Mail;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Pet_caring_website.Services
 {
@@ -33,8 +30,6 @@ namespace Pet_caring_website.Services
             _logger.LogInformation($"[EmailService] SMTP Server: smtp.gmail.com, Port: 587, SSL: true");
             _logger.LogInformation($"[EmailService] Mật khẩu SMTP {(string.IsNullOrEmpty(password) ? "NULL" : "Đã nhận")}");
 
-
-
             if (string.IsNullOrEmpty(fromEmail) || string.IsNullOrEmpty(password))
             {
                 throw new InvalidOperationException("Thông tin Email hoặc mật khẩu SMTP không được cấu hình.");
@@ -42,25 +37,30 @@ namespace Pet_caring_website.Services
 
             // Xác định tiêu đề và nội dung email theo loại OTP
             string subject, body;
+
             if (subjectType == "register")
             {
                 subject = "Xác nhận đăng ký tài khoản";
                 body = $"<p>Chào mừng bạn đến với hệ thống của chúng tôi!</p>" +
                        $"<p>Mã OTP đăng ký của bạn là: <strong>{otp}</strong></p>" +
-                       $"<p>Vui lòng nhập mã này để hoàn tất đăng ký. Mã có hiệu lực trong 5 phút.</p>";
+                       $"<p>Vui lòng nhập mã này để hoàn tất đăng ký. Mã có hiệu lực trong <strong>5 phút.</strong></p>";
             }
             else if (subjectType == "reset-password")
             {
                 subject = "Mã OTP đặt lại mật khẩu";
                 body = $"<p>Bạn đã yêu cầu đặt lại mật khẩu.</p>" +
                        $"<p>Mã OTP của bạn là: <strong>{otp}</strong></p>" +
-                       $"<p>OTP này có hiệu lực trong 5 phút. Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>";
+                       $"<p>OTP này có hiệu lực trong <strong>5 phút</strong></p>";
+            }
+            else if (subjectType == "new-password") 
+            {
+                subject = "Mật khẩu mới";
+                body = $"<p>Mật khẩu của bạn là: <strong>{otp}</strong></p>";
             }
             else
             {
                 throw new ArgumentException("Loại email không hợp lệ.", nameof(subjectType));
             }
-
 
             try
             {

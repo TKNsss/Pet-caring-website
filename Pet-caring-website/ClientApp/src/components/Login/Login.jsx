@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { loginImg, catLoginImg } from "../../constants";
+import { FaArrowLeft } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { login, register } from "../../redux/features/auth/authSlice";
+import {
+  login,
+  register,
+  resetPassword,
+  updateToken,
+  forgotPassword,
+} from "../../redux/features/auth/authSlice";
 import { fetchUserProfile } from "../../redux/features/users/usersSlice";
-import { updateToken } from "../../redux/features/auth/authSlice";
 import { toast } from "react-toastify";
-import { FaArrowLeft } from "react-icons/fa";
+import OTPModal from "./OTPModal/OTPModal";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -17,6 +23,8 @@ const Login = () => {
   // state
   const [isRegistering, setIsRegistering] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [purpose, setPurpose] = useState("");
   // hooks
   const isDesktop = useMediaQueryContext();
   const navigate = useNavigate(); // navigate the user to a new page without the user interacting.
@@ -36,11 +44,6 @@ const Login = () => {
   };
   const [formData, setFormData] = useState(initialFormState);
 
-  // When handleNavigate() is called, it only updates isRegistering.
-  // React schedules the state update asynchronously.
-  // Once the state change is completed, React re-renders the component.
-  // The useEffect hook detects that isRegistering changed and runs.
-  // => navigate() is called after isRegistering updates, ensuring correct navigation.
   useEffect(() => {
     navigate(isRegistering ? "/register" : "/login");
   }, [isRegistering, navigate]);
@@ -52,10 +55,12 @@ const Login = () => {
     if (token) {
       dispatch(updateToken(token));
       dispatch(fetchUserProfile());
-      toast.success("Đăng nhập với Google thành công🎉");
+      toast.success("Đăng nhập với Google thành công 🎉");
       navigate("/");
     }
   }, [location.search, navigate, dispatch]);
+
+  const resetForm = () => setFormData(initialFormState);
 
   const handleChange = (event) => {
     const { name, value, checked } = event.target;
@@ -68,6 +73,20 @@ const Login = () => {
         [name]: value,
       }));
     }
+  };
+
+  const triggerRegistration = async (otpCode = "") => {
+    const resultAction = await dispatch(
+      register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        ...(otpCode && { otpCode }), // only include otpCode if provided
+      }),
+    );
+
+    return resultAction;
   };
 
   const handleSubmit = async (e) => {
@@ -86,25 +105,21 @@ const Login = () => {
           // The .unwrap() method in Redux Toolkit’s createAsyncThunk is used to extract the fulfilled value or throw an error if the promise is rejected.
           await dispatch(fetchUserProfile()).unwrap(); // Ensures profile is fetched before navigation
           navigate("/");
-          setFormData(initialFormState);
+          resetForm();
         } catch (err) {
           // Logs the error from `rejectWithValue`
           console.error("Failed to fetch profile:", err);
         }
       }
     } else {
-      const resultAction = await dispatch(
-        register({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-        }),
-      );
+      const resultAction = await triggerRegistration();
 
       if (register.fulfilled.match(resultAction)) {
-        setIsRegistering(false); // Slide back to login after successful registration
-        setFormData(initialFormState);
+        const responseData = resultAction.payload;
+
+        if (responseData?.message?.toLowerCase().includes("otp")) {
+          handleDisplayModal("register");
+        }
       }
     }
   };
@@ -115,6 +130,53 @@ const Login = () => {
 
   const handleTextChange = (text) => {
     return status === "loading" ? "Loading..." : text;
+  };
+
+  const handleForgotPassword = async () => {
+    await dispatch(forgotPassword({ email: formData.email }));
+  };
+
+  const handleDisplayModal = (newPurpose) => {
+    if (newPurpose === "register") {
+      setPurpose("register");
+      setShowModal(true);
+    } else if (newPurpose === "forgot-password") {
+      if (formData.email !== "") {
+        setPurpose("forgot-password");
+        setShowModal((prev) => !prev); // toggle
+      } else {
+        toast.warning("Vui lòng điền email để lấy lại mật khẩu!");
+      }
+    } else {
+      // fallback: just toggle visibility
+      setShowModal((prev) => !prev);
+    }
+  };
+
+  const handleOTPSubmit = async (otpValue) => {
+    if (purpose === "register") {
+      const resultAction = await triggerRegistration(otpValue);
+
+      if (register.fulfilled.match(resultAction)) {
+        setIsRegistering(false);
+        resetForm();
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    if (purpose === "forgot-password") {
+      const resultAction = await dispatch(
+        resetPassword({ email: formData.email, otpCode: otpValue }),
+      );
+
+      if (resetPassword.fulfilled.match(resultAction)) {
+        return true;
+      } else {
+        return false;
+      }
+    }
   };
 
   return (
@@ -139,7 +201,7 @@ const Login = () => {
 
           <Link
             to="/"
-            className="text-third flex justify-center items-center gap-1 text-sm hover:underline"
+            className="text-third font-Poppins flex items-center justify-center gap-1 text-sm hover:underline"
           >
             <FaArrowLeft className="text-sm" />
             back to home
@@ -219,12 +281,14 @@ const Login = () => {
                   Show password
                 </label>
               </div>
-              <Link
-                to="/forgot-password"
-                className="hover:text-third text-sm text-gray-600 hover:underline"
-              >
-                Forgot password?
-              </Link>
+              {!isRegistering && (
+                <button
+                  className="hover:text-third cursor-pointer text-sm text-gray-600 hover:underline"
+                  onClick={() => handleDisplayModal("forgot-password")}
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
 
             <button
@@ -284,6 +348,14 @@ const Login = () => {
           />
         </motion.div>
       </div>
+
+      <OTPModal
+        isOpen={showModal}
+        onRequestClose={() => setShowModal(false)}
+        onSubmit={handleOTPSubmit}
+        onForgotPassword={handleForgotPassword}
+        purpose={purpose}
+      />
     </div>
   );
 };

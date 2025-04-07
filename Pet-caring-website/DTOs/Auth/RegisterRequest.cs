@@ -1,6 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Pet_caring_website.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace Pet_caring_website.DTOs.Auth;
+
+//ASP.NET Core uses System.Text.Json by default.
+//It automatically matches JSON keys like username to C# properties like UserName.
 
 public class RegisterRequest
 {
@@ -24,5 +28,4 @@ public class RegisterRequest
     public string ConfirmPassword { get; set; } = null!;
 
     public string? OtpCode { get; set; }  // Người dùng nhập OTP sau khi nhận email
-
 }
