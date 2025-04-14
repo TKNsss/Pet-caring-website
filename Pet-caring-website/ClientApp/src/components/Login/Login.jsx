@@ -13,7 +13,7 @@ import {
   updateToken,
   forgotPassword,
 } from "../../redux/features/auth/authSlice";
-import { fetchUserProfile } from "../../redux/features/users/usersSlice";
+import { triggerRefreshUserProfile } from "../../redux/features/users/usersSlice";
 import { toast } from "react-toastify";
 import OTPModal from "./OTPModal/OTPModal";
 
@@ -54,7 +54,6 @@ const Login = () => {
 
     if (token) {
       dispatch(updateToken(token));
-      dispatch(fetchUserProfile());
       toast.success("Đăng nhập với Google thành công 🎉");
       navigate("/");
     }
@@ -78,10 +77,10 @@ const Login = () => {
   const triggerRegistration = async (otpCode = "") => {
     const resultAction = await dispatch(
       register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        confirmPassword: formData.confirmPassword,
+        username: formData.username.trim(),
+        email: formData.email.trim(),
+        password: formData.password.trim(),
+        confirmPassword: formData.confirmPassword.trim(),
         ...(otpCode && { otpCode }), // only include otpCode if provided
       }),
     );
@@ -95,21 +94,15 @@ const Login = () => {
     if (!isRegistering) {
       const resultAction = await dispatch(
         login({
-          email: formData.email,
-          password: formData.password,
+          email: formData.email.trim(),
+          password: formData.password.trim(),
         }),
       );
 
       if (login.fulfilled.match(resultAction)) {
-        try {
-          // The .unwrap() method in Redux Toolkit’s createAsyncThunk is used to extract the fulfilled value or throw an error if the promise is rejected.
-          await dispatch(fetchUserProfile()).unwrap(); // Ensures profile is fetched before navigation
-          navigate("/");
-          resetForm();
-        } catch (err) {
-          // Logs the error from `rejectWithValue`
-          console.error("Failed to fetch profile:", err);
-        }
+        navigate("/");
+        dispatch(triggerRefreshUserProfile());
+        resetForm();
       }
     } else {
       const resultAction = await triggerRegistration();

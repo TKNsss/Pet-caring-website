@@ -1,8 +1,9 @@
 import { TiHome } from "react-icons/ti";
 import { FaHandHoldingHeart } from "react-icons/fa6";
 import { MdGroup } from "react-icons/md";
-import { FaPhoneAlt } from "react-icons/fa";
-import { FaUser, FaCog, FaSignOutAlt } from "react-icons/fa";
+import { FaPhoneAlt, FaUser, FaCog, FaSignOutAlt} from "react-icons/fa";
+import { LuUserCog, LuLayoutDashboard } from "react-icons/lu";
+import { MdOutlinePets, MdPayments, MdOutlineHome } from "react-icons/md";
 
 import {
   logo,
@@ -43,6 +44,9 @@ import {
   PetService_6,
   dogFooterGallery,
   catFooterGallery,
+  logoWhite,
+  womanHoldCat,
+  profileTopCat,
 } from "../assets";
 
 export const navLinks = [
@@ -237,7 +241,25 @@ export const images = [
   { src: PetService_4, category: "dog-running" },
   { src: PetService_4, category: "dog-running" },
 ];
-// 3) Mảng ảnh mẫu (thay đường dẫn thành ảnh thật của bạn)
+
+export const profile = [
+  { id: "My Dashboard", title: "My Dashboard", icon: LuLayoutDashboard },
+  { id: "My Profile", title: "My Profile", icon: LuUserCog },
+  { id: "My Pets", title: "My Pets", icon: MdOutlinePets },
+  { id: "My Payment", title: "My Payment", icon: MdPayments },
+  { id: "Home", title: "Back Home", icon: MdOutlineHome },
+];
+
+export const userFields = [
+  { label: "User name", name: "username" },
+  { label: "First name", name: "firstname" },
+  { label: "Last name", name: "lastname" },
+  { label: "Phone", name: "phone" },
+  { label: "E-mail", name: "email" },
+  { label: "Address", name: "address" },
+  { label: "New password", name: "newPassword" },
+  { label: "Confirmed Password", name: "confirmedPassword" },
+];
 
 export {
   logo,
@@ -258,4 +280,7 @@ export {
   galleryHeaderImg,
   dogFooterGallery,
   catFooterGallery,
+  logoWhite,
+  womanHoldCat,
+  profileTopCat,
 };

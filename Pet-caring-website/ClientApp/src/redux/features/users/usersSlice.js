@@ -8,6 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const initialState = {
   user: null,
   error: null,
+  refreshTrigger: 0,
 };
 
 export const fetchUserProfile = createAsyncThunk(
@@ -23,8 +24,29 @@ export const fetchUserProfile = createAsyncThunk(
 
       const response = await axios.get(`${API_BASE_URL}/user/profile`, {
         headers: { Authorization: `Bearer ${token}` },
-      }); 
-      return response.data;
+      });
+      return response.data.user;
+    } catch (err) {
+      return handleError(err, thunkAPI);
+    }
+  },
+);
+
+export const updateUserProfile = createAsyncThunk(
+  "auth/updateUserProfile",
+  async (userData, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.token; 
+
+      const response = await axios.patch(
+        `${API_BASE_URL}/user/update-profile`,
+        userData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      toast.success(`${response.data.message} 🎉`);  
+      return response.data.user;
     } catch (err) {
       return handleError(err, thunkAPI);
     }
@@ -34,7 +56,12 @@ export const fetchUserProfile = createAsyncThunk(
 const usersSlice = createSlice({
   name: "users",
   initialState,
-  reducers: {},
+  reducers: {
+    triggerRefreshUserProfile: (state) => {
+      state.refreshTrigger += 1;
+    },
+  },
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
@@ -42,8 +69,15 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.error = action.payload;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.user = action.payload;
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });
 
+export const { triggerRefreshUserProfile } = usersSlice.actions;
 export default usersSlice.reducer;

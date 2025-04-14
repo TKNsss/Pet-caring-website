@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BCrypt.Net;
 using Pet_caring_website.Data;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Pet_caring_website.DTOs.User;
 using Pet_caring_website.Services;
 
@@ -63,45 +60,66 @@ namespace Pet_caring_website.Controllers
         }
 
         // Update user profile
-        [HttpPut("update-profile")]
+        [HttpPatch("update-profile")]
         [Authorize]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
 
             var user = await _context.Users.FindAsync(userId);
+
             if (user == null)
             {
                 return NotFound(new { message = "Người dùng không tồn tại" });
             }
 
-            // Cập nhật thông tin cơ bản
-            user.UserName = request.UserName ?? user.UserName;
-            user.FirstName = request.FirstName ?? user.FirstName;
-            user.LastName = request.LastName ?? user.LastName;
-            user.Phone = request.Phone ?? user.Phone;
-            user.Address = request.Address ?? user.Address;
+            // ✔️ only update fields that are explicitly provided and not null in the request.
+            // ✔️ Empty strings like "" are allowed and will be updated.
+            // ❌ Fields that are not included (left undefined / null) will be skipped.
+            if (request.UserName != null)
+                user.UserName = request.UserName.Trim();
 
-            // Nếu user có role là "vet", mới cho phép cập nhật speciality
-            if (user.Role == "vet" && !string.IsNullOrEmpty(request.Speciality))
-            {
-                user.Speciality = request.Speciality;
-            }
+            if (request.FirstName != null)
+                user.FirstName = request.FirstName.Trim();
+
+            if (request.LastName != null)
+                user.LastName = request.LastName.Trim();
+
+            if (request.Phone != null)
+                user.Phone = request.Phone?.Trim();  
+
+            if (request.Address != null)
+                user.Address = request.Address.Trim();
+
+            if (user.Role?.ToLower() == "vet" && request.Speciality != null)
+                user.Speciality = request.Speciality.Trim();
 
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Cập nhật thông tin thành công" });
+            return Ok(new
+            {
+                message = "Cập nhật thông tin thành công",
+                user = new
+                {
+                    username = user.UserName,
+                    firstname = user.FirstName,
+                    lastname = user.LastName,
+                    phone = user.Phone,
+                    email = user.Email,
+                    address = user.Address,
+                }
+            });
         }
 
         // Đổi mật khẩu khi người dùng vẫn còn phiên đăng nhập
-        [Authorize]
         [HttpPost("change-password")]
+        [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             if (!ModelState.IsValid)

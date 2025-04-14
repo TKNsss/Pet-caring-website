@@ -19,7 +19,7 @@ const UserToggleSection = ({ open, links, user, onLogout }) => {
               {user ? "Welcome" : "Not logged in"}
             </h3>
             <p className="text-sm text-gray-400">
-              {user ? user.user.username : "None"}
+              {user ? user.username : "None"}
             </p>
           </div>
 

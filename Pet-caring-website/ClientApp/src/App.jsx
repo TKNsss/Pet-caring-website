@@ -2,7 +2,7 @@ import { React, useEffect } from "react";
 import Modal from "react-modal";
 
 // Required: Bind modal to your root app element
-Modal.setAppElement('#root'); // ID from index.html
+Modal.setAppElement("#root"); // ID from index.html
 
 import GalleryPage from "./components/GalleryPage/GalleryPage";
 import Whpc from "./components/whpc/Whpc";
@@ -24,13 +24,11 @@ import UserProfile from "./components/UserProfile/UserProfile";
 
 const App = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.users);
+  const refreshTrigger = useSelector(state => state.users.refreshTrigger);
 
   useEffect(() => {
-    if (!user) {
-      dispatch(fetchUserProfile());
-    }
-  }, [dispatch, user]);
+    dispatch(fetchUserProfile());
+  }, [dispatch, refreshTrigger]);
 
   return (
     <>

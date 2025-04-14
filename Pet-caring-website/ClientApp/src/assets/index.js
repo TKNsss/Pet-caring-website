@@ -36,6 +36,9 @@ import PetService_5 from "./PetService_5.jpg";
 import PetService_6 from "./PetService_6.jpg";
 import dogFooterGallery from "./dog_footer.png";
 import catFooterGallery from "./cat_footer.png";
+import logoWhite from "./logo-white.png";
+import womanHoldCat from "./woman-hold-cat.png";
+import profileTopCat from "./profileTopCat.png";
 
 export {
   logo,
@@ -76,4 +79,7 @@ export {
   PetService_6,
   dogFooterGallery,
   catFooterGallery,
+  logoWhite,
+  womanHoldCat,
+  profileTopCat,
 };
