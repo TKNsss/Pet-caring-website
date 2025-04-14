@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Pet_caring_website.DTOs.User;
 using Pet_caring_website.Services;
 
-
 namespace Pet_caring_website.Controllers
 {
     [Route("api/v1/[controller]")]
@@ -118,46 +117,36 @@ namespace Pet_caring_website.Controllers
         }
 
         // Đổi mật khẩu khi người dùng vẫn còn phiên đăng nhập
-        [HttpPost("change-password")]
+        [HttpPatch("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new
-                {
-                    message = "Dữ liệu không hợp lệ.",
-                    errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-                });
-            }
-
             // Lấy userId từ token và chuyển sang Guid
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr))
-            {
-                return Unauthorized(new { message = "Thông tin người dùng không hợp lệ." });
-            }
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            Guid userId;
-            try
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
             {
-                userId = Guid.Parse(userIdStr);
-            }
-            catch (Exception)
-            {
-                return Unauthorized(new { message = "Thông tin người dùng không hợp lệ." });
+                return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
-            if (user == null)
+
+            if (user == null)  
+                return Unauthorized(new { message = "Người dùng không tồn tại." });  
+
+            if (user.Password == null)
             {
-                return Unauthorized(new { message = "Người dùng không tồn tại." });
+                return BadRequest(new { message = "Người dùng không có mật khẩu. Hãy chọn quên mật khẩu để tạo!" });
             }
 
-            // So sánh mật khẩu cũ (sử dụng BCrypt để verify)
-            if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.Password))
+            if (!PasswordService.VerifyPassword(request.OldPassword, user.Password))
             {
                 return BadRequest(new { message = "Mật khẩu cũ không chính xác." });
+            }
+
+            if (request.OldPassword == request.NewPassword)
+            {
+                return BadRequest(new { message = "Mật khẩu mới không được giống mật khẩu cũ." });
             }
 
             // Cập nhật mật khẩu mới sau khi đã hash
@@ -167,7 +156,6 @@ namespace Pet_caring_website.Controllers
 
             return Ok(new { message = "Đổi mật khẩu thành công." });
         }
-
 
         [HttpDelete("delete-acc")]
         [Authorize]

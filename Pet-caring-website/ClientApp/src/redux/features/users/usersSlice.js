@@ -36,7 +36,7 @@ export const updateUserProfile = createAsyncThunk(
   "auth/updateUserProfile",
   async (userData, thunkAPI) => {
     try {
-      const token = thunkAPI.getState().auth.token; 
+      const token = thunkAPI.getState().auth.token;
 
       const response = await axios.patch(
         `${API_BASE_URL}/user/update-profile`,
@@ -45,8 +45,28 @@ export const updateUserProfile = createAsyncThunk(
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      toast.success(`${response.data.message} 🎉`);  
+      toast.success(`${response.data.message} 🎉`);
       return response.data.user;
+    } catch (err) {
+      return handleError(err, thunkAPI);
+    }
+  },
+);
+
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async (passwordData, thunkAPI) => {
+    try {
+      const token = thunkAPI.getState().auth.token;
+
+      const response = await axios.patch(
+        `${API_BASE_URL}/user/change-password`,
+        passwordData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      toast.success(`${response.data.message} 🎉`);
     } catch (err) {
       return handleError(err, thunkAPI);
     }
@@ -75,7 +95,10 @@ const usersSlice = createSlice({
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
         state.error = action.payload;
-      });
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.error = action.payload;
+      })
   },
 });
 

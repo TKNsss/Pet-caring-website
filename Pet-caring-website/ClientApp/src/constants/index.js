@@ -1,7 +1,7 @@
 import { TiHome } from "react-icons/ti";
 import { FaHandHoldingHeart } from "react-icons/fa6";
 import { MdGroup } from "react-icons/md";
-import { FaPhoneAlt, FaUser, FaCog, FaSignOutAlt} from "react-icons/fa";
+import { FaPhoneAlt, FaUser, FaCog, FaSignOutAlt } from "react-icons/fa";
 import { LuUserCog, LuLayoutDashboard } from "react-icons/lu";
 import { MdOutlinePets, MdPayments, MdOutlineHome } from "react-icons/md";
 
@@ -257,8 +257,9 @@ export const userFields = [
   { label: "Phone", name: "phone" },
   { label: "E-mail", name: "email" },
   { label: "Address", name: "address" },
+  { label: "Old password", name: "oldPassword" },
   { label: "New password", name: "newPassword" },
-  { label: "Confirmed Password", name: "confirmedPassword" },
+  { label: "Confirm New Password", name: "newConfirmedPassword" },
 ];
 
 export {

@@ -1,5 +1,6 @@
 import React from "react";
 import { logoWhite, profile, womanHoldCat } from "../../../constants";
+import { Link } from "react-router-dom";
 
 const Sidebar = ({ section, setSection }) => {
   return (
@@ -18,18 +19,47 @@ const Sidebar = ({ section, setSection }) => {
           </div>
 
           <ul className="flex flex-col">
-            {profile.map(({ id, title, icon: Icon }) => (
-              <li
-                key={id}
-                onClick={() => setSection(id)}
-                className={`group relative flex cursor-pointer items-center gap-3 rounded-l-full py-7 hover:text-black @max-5xl:justify-center @5xl:px-8 @5xl:py-5 ${section === id ? "bg-profileSecondary activeRadius text-black" : ""} `}
-              >
-                <Icon className="transform text-2xl transition-transform duration-300 group-hover:scale-110" />
-                <span className="hidden transform transition-transform duration-300 group-hover:scale-110 @5xl:block">
-                  {title}
-                </span>
-              </li>
-            ))}
+            {profile.map(({ id, title, icon: Icon }) => {
+              const isActive = section === id;
+              const baseClasses =
+                "group relative flex items-center gap-3 rounded-l-full py-7 hover:text-black";
+              const responsiveClasses =
+                "@max-5xl:justify-center @5xl:px-8 @5xl:py-5";
+              const activeClasses = isActive
+                ? "bg-profileSecondary activeRadius text-black"
+                : "";
+              const iconClasses =
+                "transform text-2xl transition-transform duration-300 group-hover:scale-110";
+              const labelClasses =
+                "hidden transform transition-transform duration-300 group-hover:scale-110 @5xl:block";
+
+              // Handle special "Home" case
+              if (id === "Home") {
+                return (
+                  <li key={id}>
+                    <Link
+                      to="/"
+                      className={`${baseClasses} ${responsiveClasses} ${activeClasses}`}
+                    >
+                      <Icon className={iconClasses} />
+                      <span className={labelClasses}>{title}</span>
+                    </Link>
+                  </li>
+                );
+              }
+
+              // Default menu items
+              return (
+                <li
+                  key={id}
+                  onClick={() => setSection(id)}
+                  className={`${baseClasses} ${responsiveClasses} ${activeClasses} cursor-pointer`}
+                >
+                  <Icon className={iconClasses} />
+                  <span className={labelClasses}>{title}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
 

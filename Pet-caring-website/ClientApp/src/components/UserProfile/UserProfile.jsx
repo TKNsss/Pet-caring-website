@@ -5,12 +5,26 @@ import ProfileCard from "./ProfileCard/ProfileCard";
 import SubscriptionBox from "./SubscriptionBox/SubscriptionBox";
 import CoursesTimeline from "./CoursesTimeline/CoursesTimeline";
 import { FaSignOutAlt } from "react-icons/fa";
-import { Link } from "react-router-dom";
 import { profileTopCat } from "../../constants";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../../redux/features/auth/authSlice";
+import { useNavigate } from "react-router-dom";
+import { fetchUserProfile } from "../../redux/features/users/usersSlice";
+
 const UserProfile = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [section, setSection] = useState("My Dashboard");
   const userData = useSelector((state) => state.users.user);
+
+  const handleLogout = async () => {
+    const result = await dispatch(logout());
+
+    if (logout.fulfilled.match(result)) {
+      dispatch(fetchUserProfile());
+      navigate("/login");
+    }
+  };
 
   return (
     <div className="bg-profileSecondary @container relative flex min-h-screen font-sans">
@@ -25,9 +39,9 @@ const UserProfile = () => {
             src={profileTopCat}
             className="absolute top-[70%] left-1/2 hidden w-25 -translate-x-1/2 -translate-y-1/2 @3xl:block"
           />
-          <Link to="/">
+          <button className="cursor-pointer" onClick={handleLogout}>
             <FaSignOutAlt className="text-third transform text-xl transition-transform duration-300 hover:scale-110 @md:text-3xl" />
-          </Link>
+          </button>
         </div>
 
         {/* 🟡 3. Render section content conditionally */}

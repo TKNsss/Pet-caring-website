@@ -18,7 +18,7 @@ namespace Pet_caring_website.Services
         public static string GenerateRandomPassword(int length = 8)
         {
             var random = new Random();
-            const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()";
+            const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@$%&*?";
             var password = new char[length];
 
             for (int i = 0; i < length; i++)
