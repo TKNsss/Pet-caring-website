@@ -39,6 +39,14 @@ namespace Pet_caring_website.Data
 
                 entity.Property(e => e.ApId).UseIdentityAlwaysColumn();
 
+                // Giữ kiểu dữ liệu 'timestamp without time zone' cho ApDate
+                entity.Property(e => e.ApDate)
+                    .HasColumnType("timestamp without time zone");
+
+                // Giữ kiểu dữ liệu 'timestamp without time zone' cho CreateAt
+                entity.Property(e => e.CreateAt)
+                    .HasColumnType("timestamp without time zone");
+
                 entity.Property(e => e.Status)
                     .IsRequired()
                     .HasMaxLength(20)

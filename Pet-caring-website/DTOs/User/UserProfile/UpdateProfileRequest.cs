@@ -1,4 +1,5 @@
-﻿namespace Pet_caring_website.DTOs.User
+﻿using System.ComponentModel.DataAnnotations;
+namespace Pet_caring_website.DTOs.User.UserProfile
 {
     public class UpdateProfileRequest
     {

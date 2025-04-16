@@ -28,7 +28,7 @@ public partial class User
 
     [Column("password")]
     [StringLength(80, MinimumLength = 8, ErrorMessage = "Password must be at least 6 characters long.")]
-    public string Password { get; set; } = null!;
+    public string? Password { get; set; }
 
     [Column("phone")]
     [StringLength(10)]

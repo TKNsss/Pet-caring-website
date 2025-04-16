@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+namespace Pet_caring_website.DTOs.User.UserProfile;
 public class ChangePasswordRequest
 {
     [Required(ErrorMessage = "Old password is required.")]
