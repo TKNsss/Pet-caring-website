@@ -202,10 +202,7 @@ namespace Pet_caring_website.Controllers
                 pet.Weight = request.Weight.Value;
 
             if (request.Notes != null)          
-                pet.Notes = request.Notes; 
-
-            if (request.SpcId.HasValue)
-                pet.SpcId = request.SpcId.Value;         
+                pet.Notes = request.Notes;                 
 
             try
             {

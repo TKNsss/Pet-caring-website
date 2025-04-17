@@ -22,7 +22,7 @@ namespace Pet_caring_website.DTOs.Pet
         public string Gender { get; set; } = null!;
 
         [Required(ErrorMessage = "Weight is required")]
-        [Range(0.1, 300, ErrorMessage = "Weight must be between 0.1 and 300 kg")]
+        [Range(0.1, 100, ErrorMessage = "Weight must be between 0.1 and 100 kg")]
         public decimal Weight { get; set; }
 
         [StringLength(500, ErrorMessage = "Notes cannot exceed 500 characters")]

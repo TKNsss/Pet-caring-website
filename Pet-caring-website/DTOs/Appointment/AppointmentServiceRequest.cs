@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Pet_caring_website.DTOs.User.Appointment;
+namespace Pet_caring_website.DTOs.Appointment;
 
 public class AppointmentServiceRequest
 {
