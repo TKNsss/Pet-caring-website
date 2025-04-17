@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,11 +14,11 @@ public partial class Pet
     public short? SpcId { get; set; }
 
     [Column("pet_name")]
-    [StringLength(20)]
+    [StringLength(50)]
     public string PetName { get; set; } = null!;
 
     [Column("breed")]
-    [StringLength(20)]
+    [StringLength(50)]
     public string? Breed { get; set; }
 
     [Column("age")]

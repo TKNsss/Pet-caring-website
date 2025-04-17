@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { BsPencilSquare } from "react-icons/bs";
-import { FaSpinner } from "react-icons/fa";
+import { FaSpinner, FaUser } from "react-icons/fa";
 import { userFields } from "../../../constants";
 import {
   updateUserProfile,
   triggerRefreshUserProfile,
   changePassword,
+  uploadUserAvatar,
 } from "../../../redux/features/users/usersSlice";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
@@ -15,7 +16,7 @@ const ProfileCard = ({ user }) => {
   const [unEditable, setUnEditable] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
-  const [savePassword, setSavePassword] = useState(false);
+  const [spinner, setSpinner] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -121,7 +122,7 @@ const ProfileCard = ({ user }) => {
       return;
     }
 
-    setSavePassword(true);
+    setSpinner(true);
 
     try {
       await dispatch(
@@ -132,17 +133,68 @@ const ProfileCard = ({ user }) => {
     } catch (err) {
       toast.error(err.message || "Failed to change password.");
     }
-    setSavePassword(false);
+    setSpinner(false);
+  };
+
+  const handleImageUpload = async (e) => {
+    // get the first file (single image upload).
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // use multiple/form-data to upload image
+    // browser send binary File (ex: image file, ...) objects in an HTTP request
+    const formData = new FormData();
+    formData.append("img", file);
+
+    setSpinner(true);
+    try {
+      await dispatch(uploadUserAvatar(formData)).unwrap();
+      dispatch(triggerRefreshUserProfile());
+    } catch (err) {
+      toast.error(err.message || "Failed to upload avatar.");
+    }
+    setSpinner(false);
   };
 
   return (
     <div className="flex flex-col justify-between gap-4 rounded-3xl bg-white p-4 shadow-md @max-3xl:items-center @xl:p-6 @3xl:flex-row">
       <div className="flex w-full flex-col items-center gap-6 @3xl:flex-row">
-        <img
-          src="https://i.imgur.com/uL8jzDN.png"
-          alt="avatar"
-          className={`h-24 w-24 rounded-full @3xl:${update && "self-start"}`}
-        />
+        <div
+          className={`relative flex min-w-24 flex-col items-center @3xl:${update && "self-start"}`}
+        >
+          {user?.avatar_url ? (
+            <img
+              src={user.avatar_url}
+              alt="avatar"
+              className={`h-24 w-24 rounded-full object-cover`}
+            />
+          ) : (
+            <div
+              className={`flex h-24 w-24 items-center justify-center rounded-full bg-gray-200`}
+            >
+              <FaUser className="h-12 w-12 text-gray-500" />
+            </div>
+          )}
+
+          {/* <input type="file" /> allows multiple files */}
+          {update && (
+            <>
+              <label className="mt-2 cursor-pointer text-sm text-blue-500 hover:underline">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                {spinner ? (
+                  <FaSpinner className="pointer-events-none mx-auto animate-spin text-blue-500" />
+                ) : (
+                  "Upload Image"
+                )}
+              </label>
+            </>
+          )}
+        </div>
 
         <div className="w-full">
           {update ? (
@@ -271,7 +323,7 @@ const ProfileCard = ({ user }) => {
                     onClick={handleChangePassword}
                     disabled={unEditable}
                   >
-                    {savePassword ? (
+                    {spinner ? (
                       <FaSpinner className="mx-auto animate-spin text-white" />
                     ) : (
                       "Save Password"

@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Pet_caring_website.Models;
 using Pet_caring_website.Services;
+using Pet_caring_website.Cloudinary;
+using CloudinaryDotNet;
+
+//  dependency injection (DI) container. This lets you inject and use it anywhere in
+//  your project (like ImageService) without manually creating it every time.
 
 namespace Pet_caring_website
 {
@@ -24,6 +28,7 @@ namespace Pet_caring_website
             }
 
             // ADD SERVICES:
+
             // Registers controllers in the application to handle API requests.
             builder.Services.AddControllers();
 
@@ -32,6 +37,28 @@ namespace Pet_caring_website
             builder.Services.AddMemoryCache(); // Đăng ký IMemoryCache
             builder.Services.AddSingleton<EmailService>(); // Đăng ký EmailService
             builder.Services.AddScoped<OtpService>(); // Đăng ký OtpService
+            builder.Services.AddScoped<ImageService>(); // ✅ Đăng ký ImageService
+
+            // ✅ Cloudinary setup
+            builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+
+            // Register Cloudinary Account and Cloudinary instance as a singleton
+            // Bind that section in appsettings.json to the CloudinarySettings class
+            var cloudinaryConfig = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
+            // a class from the Cloudinary SDK that contains credentials for your Cloudinary account.
+            var account = new Account(
+                cloudinaryConfig.CloudName,
+                cloudinaryConfig.ApiKey,
+                cloudinaryConfig.ApiSecret
+            );
+            var cloudinary = new CloudinaryDotNet.Cloudinary(account)
+            {
+                Api = { Secure = true }
+            };
+
+            // This registers the configured Cloudinary client into the DI container.
+            // Singleton means one instance is shared across the entire app
+            builder.Services.AddSingleton(cloudinary);
 
             // Đăng ký DbContext với PostgreSQL
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -51,7 +78,6 @@ namespace Pet_caring_website
                           .AllowCredentials(); // ✅ Allow credentials (cookies, auth headers)
                 });
             });
-
 
             // Configure Authentication & JWT 
             var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.

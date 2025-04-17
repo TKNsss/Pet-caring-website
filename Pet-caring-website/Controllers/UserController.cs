@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Pet_caring_website.DTOs.User;
 using Pet_caring_website.Services;
+using CloudinaryDotNet.Actions;
 
 namespace Pet_caring_website.Controllers
 {
@@ -13,10 +14,12 @@ namespace Pet_caring_website.Controllers
     public class UserController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly ImageService _imageService;
 
-        public UserController(AppDbContext context)
+        public UserController(AppDbContext context, ImageService imageService)
         {
             _context = context;
+            _imageService = imageService;
         }
 
         // Get user profile
@@ -45,6 +48,7 @@ namespace Pet_caring_website.Controllers
                     lastname = u.LastName,
                     phone = u.Phone,
                     address = u.Address,
+                    avatar_url = u.AvatarUrl,
                 })
                 .FirstOrDefaultAsync();
 
@@ -155,6 +159,55 @@ namespace Pet_caring_website.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Đổi mật khẩu thành công." });
+        }
+
+        [HttpPost("upload-avatar")]
+        [Authorize]
+        public async Task<IActionResult> UploadAvatar([FromForm(Name = "img")] IFormFile image)
+        {
+            if (image == null || image.Length == 0)
+                return BadRequest(new { error = "No image file provided." });
+
+            try
+            {
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+                {
+                    return Unauthorized(new { message = "Bạn chưa đăng nhập" });
+                }
+                var result = await _imageService.UploadUserAvatarAsync(image, userId.ToString());
+
+                if (result == null)
+                {
+                    return StatusCode(500, new { error = "Error uploading avatar. Please try again later." });
+                }
+                var avatarUrl = result.SecureUrl.ToString();
+                var user = await _context.Users.FindAsync(userId);
+
+                if (user != null)
+                {
+                    user.AvatarUrl = avatarUrl;
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(new
+                {
+                    message = "Upload avatar successfully.",
+                    url = avatarUrl,
+                    publicId = result.PublicId
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // For validation errors (e.g., file too large, invalid type)
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // For unexpected errors (e.g., Cloudinary errors, stream issues)
+                return StatusCode(500, new { error = "An error occurred while uploading the image.", details = ex.Message });
+            }
         }
 
         [HttpDelete("delete-acc")]

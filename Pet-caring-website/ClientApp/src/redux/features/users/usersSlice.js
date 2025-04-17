@@ -73,6 +73,22 @@ export const changePassword = createAsyncThunk(
   },
 );
 
+export const uploadUserAvatar = createAsyncThunk("users/uploadUserAvatar", async (formData, thunkAPI) => {
+  try {
+    const token = thunkAPI.getState().auth.token; 
+
+    const response = await axios.post(`${API_BASE_URL}/user/upload-avatar`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    toast.success(`${response.data.message} 🎉`);
+  } catch (err) {
+    return handleError(err, thunkAPI);
+  }
+})
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
