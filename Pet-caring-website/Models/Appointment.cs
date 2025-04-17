@@ -15,8 +15,8 @@ public partial class Appointment
     [Column("user_id")]
     public Guid UserId { get; set; }
 
-    [Column("ap_date")]
-    public DateOnly ApDate { get; set; }
+    [Column("ap_date", TypeName = "timestamp without time zone")]
+    public DateTime ApDate { get; set; }
 
     [Column("status")]
     [StringLength(20)]

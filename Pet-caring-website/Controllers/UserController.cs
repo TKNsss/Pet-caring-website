@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pet_caring_website.Data;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Pet_caring_website.DTOs.User;
 using Pet_caring_website.Services;
-using CloudinaryDotNet.Actions;
 
 namespace Pet_caring_website.Controllers
 {
@@ -16,7 +15,7 @@ namespace Pet_caring_website.Controllers
         private readonly AppDbContext _context;
         private readonly ImageService _imageService;
 
-        public UserController(AppDbContext context, ImageService imageService)
+        public UserController(AppDbContext context, EmailService emailService, IConfiguration configuration, ImageService imageService)
         {
             _context = context;
             _imageService = imageService;
@@ -29,9 +28,7 @@ namespace Pet_caring_website.Controllers
         {
             // The JWT token is automatically extracted by ASP.NET from the request.
             // Extracts the user's ID from the JWT token.
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (!TryGetUserId(out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -124,19 +121,16 @@ namespace Pet_caring_website.Controllers
         [HttpPatch("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
-        {
-            // Lấy userId từ token và chuyển sang Guid
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+        {            
+            if (!TryGetUserId(out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
 
-            if (user == null)  
-                return Unauthorized(new { message = "Người dùng không tồn tại." });  
+            if (user == null)
+                return Unauthorized(new { message = "Người dùng không tồn tại." });
 
             if (user.Password == null)
             {
@@ -214,8 +208,7 @@ namespace Pet_caring_website.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteAccount()
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (!TryGetUserId(out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -230,6 +223,14 @@ namespace Pet_caring_website.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Xóa tài khoản thành công" });
+        }
+
+        // Kiểm tra đăng nhập
+        private bool TryGetUserId(out Guid userId)
+        {
+            userId = Guid.Empty;
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return !string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out userId);
         }
     }
 }

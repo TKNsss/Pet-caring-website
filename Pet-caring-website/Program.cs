@@ -80,9 +80,13 @@ namespace Pet_caring_website
             });
 
             // Configure Authentication & JWT 
-            var jwtSettings = builder.Configuration.GetSection("Jwt"); // Gets the JWT settings from appsettings.json.
-            // Converts the key into a byte array(required for cryptographic operations).
-            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
+            var jwtSettings = builder.Configuration.GetSection("Jwt");
+            var jwtKey = jwtSettings["Key"];
+
+            if (string.IsNullOrEmpty(jwtKey))
+                throw new InvalidOperationException("JWT key is missing from configuration.");
+
+            var key = Encoding.UTF8.GetBytes(jwtKey);
 
             // Lấy danh sách Super-Admin từ appsettings.json
             var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();

@@ -17,7 +17,7 @@ public partial class ServiceDetail
     public short ServiceId { get; set; }
 
     [Column("amount")]
-    public short Amount { get; set; }
+    public short? Amount { get; set; }
 
     [Column("duration")]
     public short? Duration { get; set; }

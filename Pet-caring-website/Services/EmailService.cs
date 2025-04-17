@@ -91,5 +91,56 @@ namespace Pet_caring_website.Services
                 throw new InvalidOperationException($"Không thể gửi email. Chi tiết lỗi: {ex.Message}");
             }
         }
+
+        // Thêm phương thức gửi email xác nhận
+        public async Task SendConfirmationEmailAsync(string toEmail, string subject, string body)
+        {
+            if (string.IsNullOrEmpty(toEmail))
+            {
+                throw new ArgumentException("Địa chỉ email không được để trống.", nameof(toEmail));
+            }
+
+            var fromEmail = _config["EmailSettings:Username"];
+            var password = _config["EmailSettings:Password"];
+
+            _logger.LogInformation($"[EmailService] Sending confirmation email to: {toEmail}");
+            _logger.LogInformation($"[EmailService] Email: {fromEmail}");
+            _logger.LogInformation($"[EmailService] SMTP Server: smtp.gmail.com, Port: 587, SSL: true");
+            _logger.LogInformation($"[EmailService] Mật khẩu SMTP {(string.IsNullOrEmpty(password) ? "NULL" : "Đã nhận")}");
+
+            if (string.IsNullOrEmpty(fromEmail) || string.IsNullOrEmpty(password))
+            {
+                throw new InvalidOperationException("Thông tin Email hoặc mật khẩu SMTP không được cấu hình.");
+            }
+
+            try
+            {
+                using var smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential(fromEmail, password),
+                    EnableSsl = true,
+                    UseDefaultCredentials = false
+                };
+
+                using var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail),
+                    Subject = subject,
+                    Body = body,
+                    IsBodyHtml = true
+                };
+
+                mailMessage.To.Add(new MailAddress(toEmail));
+
+                await smtpClient.SendMailAsync(mailMessage);
+                _logger.LogInformation($"Email xác nhận đã được gửi tới {toEmail}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[EmailService] Lỗi khi gửi email xác nhận tới {toEmail}: {ex.Message} \n {ex.StackTrace}");
+                throw new InvalidOperationException($"Không thể gửi email xác nhận. Chi tiết lỗi: {ex.Message}");
+            }
+        }
     }
 }
