@@ -1,6 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Pet_caring_website.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace Pet_caring_website.DTOs.Auth;
+
+//ASP.NET Core uses System.Text.Json by default.
+//It automatically matches JSON keys like username to C# properties like UserName.
 
 public class RegisterRequest
 {
@@ -16,7 +20,7 @@ public class RegisterRequest
     [Required]
     [StringLength(80, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
     [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
-        ErrorMessage = "The password must contain at least one capital, a regular word, some and a special character.")]
+        ErrorMessage = "The password must contain at least one capital, a regular word, some and a special character (@$!%*?&).")]
     public string Password { get; set; } = null!;
 
     [Required]
@@ -24,5 +28,4 @@ public class RegisterRequest
     public string ConfirmPassword { get; set; } = null!;
 
     public string? OtpCode { get; set; }  // Người dùng nhập OTP sau khi nhận email
-
 }

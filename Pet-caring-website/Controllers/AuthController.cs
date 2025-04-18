@@ -6,14 +6,11 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Text;
-using System.Security.Cryptography;
 using Pet_caring_website.Data;
 using Pet_caring_website.Models;
 using Pet_caring_website.Services;
 using Pet_caring_website.DTOs.Auth;
-using BCrypt.Net;
 
 namespace Pet_caring_website.Controllers
 {
@@ -67,7 +64,6 @@ namespace Pet_caring_website.Controllers
             {
                 user = new User
                 {
-
                     UserId = Guid.NewGuid(),
                     UserName = name ?? email,
                     Email = email.ToLower(),
@@ -88,28 +84,18 @@ namespace Pet_caring_website.Controllers
 
             // Tạo JWT Token
             var token = GenerateJwtToken(user);
+            var fe = _configuration["Jwt:Audience"];
+            var frontendUrl = $"{fe}/login?token={token}";
 
-            return Ok(new
-            {
-                message = "Đăng nhập Google thành công",
-                token,
-                user = new
-                {
-                    id = user.UserId,
-                    username = user.UserName,
-                    email = user.Email,
-                }
-            });
+            return Redirect(frontendUrl);
         }
-
 
         // Đăng ký người dùng xác thực gmail với Otp
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
-                return BadRequest("Email đã tồn tại");
+                return BadRequest(new { message = "Email đã tồn tại" });
 
             // Nếu chưa có OTP được cung cấp, gửi OTP qua email
             if (string.IsNullOrEmpty(request.OtpCode))
@@ -118,13 +104,13 @@ namespace Pet_caring_website.Controllers
                 var otp = _otpService.GenerateOtp(request.Email);
                 // Gửi OTP qua email với subject "register"
                 _emailService.SendOtpEmail(request.Email, otp, "register");
-                return Ok("Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra email để hoàn tất đăng ký.");
+                return Ok(new { message = "Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra email để hoàn tất đăng ký." });
             }
             else
             {
                 // Nếu đã có OTP, xác thực OTP
                 if (!_otpService.VerifyOtp(request.Email, request.OtpCode))
-                    return BadRequest("Mã OTP không hợp lệ hoặc đã hết hạn.");
+                    return BadRequest(new { message = "Mã OTP không hợp lệ hoặc đã hết hạn." });
 
                 var newUser = new User
                 {
@@ -139,7 +125,7 @@ namespace Pet_caring_website.Controllers
                 {
                     _context.Users.Add(newUser);
                     await _context.SaveChangesAsync();
-                    return Ok("Đăng ký thành công");
+                    return Ok(new { message = "Đăng ký thành công." });
                 }
                 catch (Exception ex)
                 {
@@ -192,10 +178,9 @@ namespace Pet_caring_website.Controllers
 
         // API đăng xuất
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Ok("Đăng xuất thành công");
+        public IActionResult Logout()
+        { 
+            return Ok(new { message = "Đăng xuất thành công!" });
         }
 
         // Gán quyền cho user
@@ -235,11 +220,12 @@ namespace Pet_caring_website.Controllers
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
             if (string.IsNullOrEmpty(request.Email) || !IsValidEmail(request.Email))
-                return BadRequest("Email không hợp lệ.");
+                return BadRequest(new { message = "Email không hợp lệ." });
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+
             if (user == null)
-                return NotFound("Email không tồn tại trong hệ thống.");
+                return NotFound(new { message = "Email không tồn tại trong hệ thống." });
 
             try
             {
@@ -259,15 +245,35 @@ namespace Pet_caring_website.Controllers
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
             if (!_otpService.VerifyOtp(request.Email, request.OtpCode))
-                return BadRequest("Mã OTP không hợp lệ hoặc đã hết hạn.");
+                return BadRequest(new { message = "Mã OTP không hợp lệ hoặc đã hết hạn." });
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if (user == null) return NotFound("Email không tồn tại trong hệ thống.");
 
-            user.Password = PasswordService.HashPassword(request.NewPassword);
-            await _context.SaveChangesAsync();
+            if (user == null) 
+                return NotFound("Email không tồn tại trong hệ thống.");
 
-            return Ok("Mật khẩu đã được cập nhật thành công.");
+            try
+            {
+                // Step 1: Generate a new random password
+                string newPassword = PasswordService.GenerateRandomPassword();
+
+                // Step 2: Hash the new password
+                string hashedPassword = PasswordService.HashPassword(newPassword);
+
+                // Step 3: Update the user's password in the database
+                user.Password = hashedPassword;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+
+                // Step 4: Send the new password to the user's email
+                _emailService.SendOtpEmail(request.Email, newPassword, "new-password");
+
+                return Ok(new { message = "Mật khẩu mới đã được gửi đến email của bạn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi khi gửi email: {ex.Message}");
+            }
         }
 
         // Kiểm tra email có đúng định dạng không
@@ -287,7 +293,7 @@ namespace Pet_caring_website.Controllers
         // Tạo JWT Token
         private string GenerateJwtToken(User user)
         {
-            // Lấy thông tin từ cấu hình
+            // Lấy thông tin từ cấu hình appsetting.json
             var jwtKey = _configuration["Jwt:Key"];
             var issuer = _configuration["Jwt:Issuer"];
             var audience = _configuration["Jwt:Audience"];
@@ -299,11 +305,16 @@ namespace Pet_caring_website.Controllers
                 throw new InvalidOperationException("JWT issuer is missing from configuration.");
             if (string.IsNullOrEmpty(audience))
                 throw new InvalidOperationException("JWT audience is missing from configuration.");
-
-            // Tạo khóa bảo mật
+            // Converts it into bytes and creates a SymmetricSecurityKey.
+            // SymmetricSecurityKey means the same key is used for both signing and verifying the token.
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            // Uses the secret key to create SigningCredentials using HMAC SHA-256
+            // Ensures the integrity of the token.
+            // The recipient can verify that the token was generated by the server and not tampered with.
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
+            // A claim is a key - value pair that holds user information.
+            // Defines the payload(data) stored inside the JWT token.
             // Tạo claims
             var claims = new List<Claim>
             {
@@ -315,20 +326,20 @@ namespace Pet_caring_website.Controllers
             {
                 claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
             }
-
-            // Lấy thời gian hết hạn token
+            // Retrieves the expiration time from appsettings.json (Jwt:ExpiryInHours).
+            // JWT tokens should expire after a certain time to improve security. 
+            // Set token expiration (default to 3 hours if missing)
             if (!int.TryParse(_configuration["Jwt:ExpiryInHours"], out int expiryHours))
                 expiryHours = 3;
 
-            // Tạo token
             var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
+                issuer: issuer, // server issued the token
+                audience: audience, // client that is allowed to use the token
+                claims: claims, // User's claims (user's data)
                 expires: DateTime.UtcNow.AddHours(expiryHours),
-                signingCredentials: credentials
+                signingCredentials: credentials // Signing key (HMAC SHA-256) - The security key used to sign the token
             );
-
+            // returns the converted JwtSecurityToken object as a string.
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }

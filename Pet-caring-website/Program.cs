@@ -1,13 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Pet_caring_website.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Pet_caring_website.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Pet_caring_website.Services;
+using Pet_caring_website.Cloudinary;
+using CloudinaryDotNet;
 
+//  dependency injection (DI) container. This lets you inject and use it anywhere in
+//  your project (like ImageService) without manually creating it every time.
 
 namespace Pet_caring_website
 {
@@ -26,6 +28,7 @@ namespace Pet_caring_website
             }
 
             // ADD SERVICES:
+
             // Registers controllers in the application to handle API requests.
             builder.Services.AddControllers();
 
@@ -34,6 +37,28 @@ namespace Pet_caring_website
             builder.Services.AddMemoryCache(); // Đăng ký IMemoryCache
             builder.Services.AddSingleton<EmailService>(); // Đăng ký EmailService
             builder.Services.AddScoped<OtpService>(); // Đăng ký OtpService
+            builder.Services.AddScoped<ImageService>(); // ✅ Đăng ký ImageService
+
+            // ✅ Cloudinary setup
+            builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+
+            // Register Cloudinary Account and Cloudinary instance as a singleton
+            // Bind that section in appsettings.json to the CloudinarySettings class
+            var cloudinaryConfig = builder.Configuration.GetSection("CloudinarySettings").Get<CloudinarySettings>();
+            // a class from the Cloudinary SDK that contains credentials for your Cloudinary account.
+            var account = new Account(
+                cloudinaryConfig.CloudName,
+                cloudinaryConfig.ApiKey,
+                cloudinaryConfig.ApiSecret
+            );
+            var cloudinary = new CloudinaryDotNet.Cloudinary(account)
+            {
+                Api = { Secure = true }
+            };
+
+            // This registers the configured Cloudinary client into the DI container.
+            // Singleton means one instance is shared across the entire app
+            builder.Services.AddSingleton(cloudinary);
 
             // Đăng ký DbContext với PostgreSQL
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -49,10 +74,10 @@ namespace Pet_caring_website
                 {
                     policy.WithOrigins("http://localhost:5173") // Allow only your frontend
                           .AllowAnyHeader()  // Allow any headers (e.g., Authorization, Content-Type)
-                          .AllowAnyMethod();  // Allow GET, POST, PUT, DELETE, etc.
+                          .AllowAnyMethod()  // Allow GET, POST, PUT, DELETE, etc.
+                          .AllowCredentials(); // ✅ Allow credentials (cookies, auth headers)
                 });
             });
-
 
             // Configure Authentication & JWT 
             var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -65,7 +90,7 @@ namespace Pet_caring_website
 
             // Lấy danh sách Super-Admin từ appsettings.json
             var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
-            
+
             // Lấy ClientId và ClientSecret từ cấu hình hoặc biến môi trường
             var googleClientId = builder.Configuration["Authentication:Google:ClientId"];
             var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
@@ -99,13 +124,20 @@ namespace Pet_caring_website
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true // Ensures the token has not expired.
                 };
+
             })
-            .AddCookie() // Thêm cookie để lưu phiên đăng nhập
+            .AddCookie(options =>
+            {
+                options.Cookie.SameSite = SameSiteMode.None; // ✅ Prevents "correlation failed" error
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensures HTTPS usage
+
+            }) 
             .AddGoogle(googleOptions =>
             {
                 googleOptions.ClientId = googleClientId;
                 googleOptions.ClientSecret = googleClientSecret;
                 googleOptions.CallbackPath = "/signin-google";
+                googleOptions.SaveTokens = true; // ✅ Stores authentication tokens
             });
 
             builder.Services.AddAuthorization();

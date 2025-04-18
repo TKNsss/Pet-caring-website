@@ -13,5 +13,20 @@ namespace Pet_caring_website.Services
 		{
 			return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
 		}
-	}
+
+        // Helper method to generate a random password
+        public static string GenerateRandomPassword(int length = 8)
+        {
+            var random = new Random();
+            const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@$%&*?";
+            var password = new char[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                password[i] = validChars[random.Next(validChars.Length)];
+            }
+
+            return new string(password);
+        }
+    }
 }

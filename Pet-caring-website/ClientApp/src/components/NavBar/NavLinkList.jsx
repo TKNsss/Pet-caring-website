@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { hoveredTransition, hoveredEffect } from "../../utils/motion";
+import { hoveredTransition, hoveredEffect } from "../../utils/motions";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { FiLogIn } from "react-icons/fi";
 import SearchBar from "./SearchBar/SearchBar";
@@ -26,7 +26,7 @@ const SubLinkList = ({ id, links, isOpen }) => {
   );
 };
 
-const NavLinkList = ({ links, scope, isDesktop, isLogin }) => {
+const NavLinkList = ({ links, scope, isDesktop, user }) => {
   const [openDropdown, setOpenDropdown] = useState({});
 
   // [id] is the dynamical key (instead of create a new key named "id", we use [id] for dynamically sets the key based on the value of id)
@@ -39,7 +39,7 @@ const NavLinkList = ({ links, scope, isDesktop, isLogin }) => {
 
   return (
     <ul
-      className="font-Poppins bg-lavender @3xl:bg-navBg border-navBorder absolute right-0 flex flex-col border-2 @3xl:static @3xl:flex-row @3xl:justify-center @3xl:gap-12 @3xl:border-none @3xl:py-5"
+      className="font-Poppins bg-lavender @3xl:bg-navBg border-navBorder absolute right-0 flex flex-col border-2 @3xl:static @3xl:flex-row @3xl:justify-center @3xl:gap-12 @3xl:border-none @3xl:py-5 z-1000"
       ref={scope}
     >
       {links.map((link) => (
@@ -86,8 +86,8 @@ const NavLinkList = ({ links, scope, isDesktop, isLogin }) => {
         <li>
           <div className="border-t-navBorder text-txt-2 mx-auto flex w-full items-center justify-between border-t px-3.5 py-3">
             <SearchBar />
-            {isLogin ? (
-              <UserDropdown />
+            {user ? (
+              <UserDropdown user={user} />
             ) : (
               <Link to={"/login"} className="flex items-center gap-1 hover:text-primary">
                 <FiLogIn className="text-2xl" />

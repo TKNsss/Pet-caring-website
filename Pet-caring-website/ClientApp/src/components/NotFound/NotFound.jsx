@@ -5,7 +5,7 @@ import {
   buttonHoverEffect,
   buttonTapEffect,
   buttonTransition,
-} from "../../utils/motion";
+} from "../../utils/motions";
 
 const NotFound = () => {
   return (

@@ -46,6 +46,9 @@ public partial class User
     [Column("role")]
     public string Role { get; set; } = null!;
 
+    [Column("avatar_url")]
+    public string? AvatarUrl { get; set; } 
+
     [InverseProperty("User")]
     public virtual ICollection<Appointment> CustomerAppointments { get; set; } = new List<Appointment>();
 
