@@ -8,9 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Pet_caring_website.Data;
-using Pet_caring_website.DTOs.User.PetProfile;
-using Pet_caring_website.DTOs.User.UserProfile;
-using Pet_caring_website.DTOs.User.Appointment;
+using Pet_caring_website.DTOs.User;
 using Pet_caring_website.Services;
 using Pet_caring_website.Models;
 
@@ -32,8 +30,8 @@ namespace Pet_caring_website.Controllers
         }
 
         // Get user profile
+        [Authorize(Roles = "client")] // Ensures only authenticated users can access this API.
         [HttpGet("profile")]
-        [Authorize] // Ensures only authenticated users can access this API.
         public async Task<IActionResult> GetUserProfile()
         {
             // The JWT token is automatically extracted by ASP.NET from the request.
@@ -69,8 +67,8 @@ namespace Pet_caring_website.Controllers
         }
 
         // Update user profile
+        [Authorize(Roles = "client")]
         [HttpPut("update-profile")]
-        [Authorize]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
         {
             if (!TryGetUserId(out Guid userId))
@@ -104,7 +102,7 @@ namespace Pet_caring_website.Controllers
         }
 
         // Đổi mật khẩu khi người dùng vẫn còn phiên đăng nhập
-        [Authorize]
+        [Authorize(Roles = "client")]
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
@@ -143,9 +141,8 @@ namespace Pet_caring_website.Controllers
             return Ok(new { message = "Đổi mật khẩu thành công." });
         }
 
-
+        [Authorize(Roles = "client")]
         [HttpDelete("delete-acc")]
-        [Authorize]
         public async Task<IActionResult> DeleteAccount()
         {
             if (!TryGetUserId(out Guid userId))
@@ -166,8 +163,8 @@ namespace Pet_caring_website.Controllers
         }
 
         // Thêm mới pet
+        [Authorize(Roles = "client")]
         [HttpPost("create-pet-profile")]
-        [Authorize]
         public async Task<IActionResult> CreatePet([FromBody] CreatePetRequest request)
         {
             if (!ModelState.IsValid)
@@ -225,9 +222,8 @@ namespace Pet_caring_website.Controllers
             }
         }
 
-
+        [Authorize(Roles = "client")]
         [HttpPut("update-pet-profile/{petId}")]
-        [Authorize]
         public async Task<IActionResult> UpdatePetProfile(int petId, [FromBody] UpdatePetRequest request)
         {
             if (request == null)
@@ -288,8 +284,8 @@ namespace Pet_caring_website.Controllers
         }
 
         // Tạo lịch hẹn
+        [Authorize(Roles ="client")]
         [HttpPost("create-appointment")]
-        [Authorize]
         public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequest request)
         {
             if (!ModelState.IsValid)
@@ -375,7 +371,7 @@ namespace Pet_caring_website.Controllers
                         $"- Dịch vụ: <strong>{s.ServiceName}</strong>"));
 
                     var emailSubject = "Xác nhận lịch hẹn";
-                    var emailBody = $@"Chào quý khách {user.UserName},<br><br>
+                    var emailBody = $@"Chào quý khách {user?.UserName},<br><br>
                                     Chúng tôi đã nhận được yêu cầu đặt lịch hẹn sử dụng dịch vụ cho thú cưng với các thông tin sau:<br>
                                     {servicesInfo}<br><br>
                                     Quý khách vui lòng <a href='{confirmationLink}'>bấm vào đây</a> để xác nhận lịch hẹn.<br><br>
@@ -437,8 +433,8 @@ namespace Pet_caring_website.Controllers
         }
 
         // Hủy lịch hẹn cho người dùng khi chưa xác nhận lịch hẹn
+        [Authorize(Roles = "client")]
         [HttpDelete("cancel-appointment/{appointmentId}")]
-        [Authorize]
         public async Task<IActionResult> CancelAppointment(int appointmentId)
         {
             if (!TryGetUserId(out Guid userId))

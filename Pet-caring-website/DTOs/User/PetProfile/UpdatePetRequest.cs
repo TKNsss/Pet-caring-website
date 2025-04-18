@@ -13,14 +13,14 @@ namespace Pet_caring_website.DTOs.User.PetProfile
         [Range(0, 100, ErrorMessage = "Tuổi phải từ 0 đến 100")]
         public short? Age { get; set; }
 
-        [StringLength(20, ErrorMessage = "Giới tính tối đa 20 ký tự.")]
-        [RegularExpression("^(Male|Female)?$", ErrorMessage = "Giới tính chỉ được là 'Male' hoặc 'Female'")]
         public string? Gender { get; set; }
 
-        [Range(0, 100, ErrorMessage = "Cân nặng phải từ 0 đến 100 kg")]
+        [Range(0.1, 100, ErrorMessage = "Cân nặng phải từ 0.1 đến 100 kg")]
         public decimal? Weight { get; set; }
 
         [StringLength(255, ErrorMessage = "Ghi chú tối đa 255 ký tự")]
         public string? Notes { get; set; }
+
+
     }
 }

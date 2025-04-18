@@ -28,10 +28,17 @@ public partial class Appointment
     [Column("create_at", TypeName = "timestamp without time zone")]
     public DateTime CreateAt { get; set; }
 
+    [Column("vet_id")]
+    public Guid? VetId { get; set; }
+
     [InverseProperty("Ap")]
     public virtual ICollection<AppointmentDetail> AppointmentDetails { get; set; } = new List<AppointmentDetail>();
 
     [ForeignKey("UserId")]
-    [InverseProperty("Appointments")]
+    [InverseProperty("CustomerAppointments")]
     public virtual User User { get; set; } = null!;
+
+    [ForeignKey("VetId")]
+    [InverseProperty("VetAppointments")]
+    public virtual User? Vet { get; set; }
 }

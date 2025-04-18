@@ -10,4 +10,5 @@ public class ChangePasswordRequest
     [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
         ErrorMessage = "The password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.")]
     public required string NewPassword { get; set; }
+
 }

@@ -47,7 +47,10 @@ public partial class User
     public string Role { get; set; } = null!;
 
     [InverseProperty("User")]
-    public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+    public virtual ICollection<Appointment> CustomerAppointments { get; set; } = new List<Appointment>();
+
+    [InverseProperty("Vet")]
+    public virtual ICollection<Appointment> VetAppointments { get; set; } = new List<Appointment>();
 
     // Maps this collection to the User property inside the PetOwner entity.
     [InverseProperty("User")]

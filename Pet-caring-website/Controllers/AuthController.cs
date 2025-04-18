@@ -198,54 +198,6 @@ namespace Pet_caring_website.Controllers
             return Ok("Đăng xuất thành công");
         }
 
-        // Tạo JWT Token
-        private string GenerateJwtToken(User user)
-        {
-            // Lấy thông tin từ cấu hình
-            var jwtKey = _configuration["Jwt:Key"];
-            var issuer = _configuration["Jwt:Issuer"];
-            var audience = _configuration["Jwt:Audience"];
-
-            // Kiểm tra null cho các giá trị cấu hình
-            if (string.IsNullOrEmpty(jwtKey))
-                throw new InvalidOperationException("JWT key is missing from configuration.");
-            if (string.IsNullOrEmpty(issuer))
-                throw new InvalidOperationException("JWT issuer is missing from configuration.");
-            if (string.IsNullOrEmpty(audience))
-                throw new InvalidOperationException("JWT audience is missing from configuration.");
-
-            // Tạo khóa bảo mật
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            // Tạo claims
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Role, user.Role ?? string.Empty)
-            };
-
-            if (!string.IsNullOrEmpty(user.Email))
-            {
-                claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
-            }
-
-            // Lấy thời gian hết hạn token
-            if (!int.TryParse(_configuration["Jwt:ExpiryInHours"], out int expiryHours))
-                expiryHours = 3;
-
-            // Tạo token
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(expiryHours),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
         // Gán quyền cho user
         [HttpPost("assign-role")]
         [Authorize]
@@ -332,6 +284,53 @@ namespace Pet_caring_website.Controllers
             }
         }
 
+        // Tạo JWT Token
+        private string GenerateJwtToken(User user)
+        {
+            // Lấy thông tin từ cấu hình
+            var jwtKey = _configuration["Jwt:Key"];
+            var issuer = _configuration["Jwt:Issuer"];
+            var audience = _configuration["Jwt:Audience"];
+
+            // Kiểm tra null cho các giá trị cấu hình
+            if (string.IsNullOrEmpty(jwtKey))
+                throw new InvalidOperationException("JWT key is missing from configuration.");
+            if (string.IsNullOrEmpty(issuer))
+                throw new InvalidOperationException("JWT issuer is missing from configuration.");
+            if (string.IsNullOrEmpty(audience))
+                throw new InvalidOperationException("JWT audience is missing from configuration.");
+
+            // Tạo khóa bảo mật
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            // Tạo claims
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Role, user.Role ?? string.Empty)
+            };
+
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
+            }
+
+            // Lấy thời gian hết hạn token
+            if (!int.TryParse(_configuration["Jwt:ExpiryInHours"], out int expiryHours))
+                expiryHours = 3;
+
+            // Tạo token
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(expiryHours),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
 }
     

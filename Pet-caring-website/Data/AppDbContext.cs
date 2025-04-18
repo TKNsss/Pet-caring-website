@@ -52,9 +52,19 @@ namespace Pet_caring_website.Data
                     .HasMaxLength(20)
                     .HasColumnType("character varying(20)");
 
-                entity.HasOne(d => d.User).WithMany(p => p.Appointments)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("fk_appointments_users");
+                // Quan hệ với user (người đặt lịch)
+                entity.HasOne(a => a.User)
+                      .WithMany(u => u.CustomerAppointments)
+                      .HasForeignKey(a => a.UserId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .HasConstraintName("fk_appointments_users");
+
+                // Quan hệ với vet (bác sĩ thú y)
+                entity.HasOne(a => a.Vet)
+                      .WithMany(u => u.VetAppointments)
+                      .HasForeignKey(a => a.VetId)
+                      .OnDelete(DeleteBehavior.ClientSetNull)
+                      .HasConstraintName("fk_appointments_vets");
             });
 
             modelBuilder.Entity<AppointmentDetail>(entity =>
