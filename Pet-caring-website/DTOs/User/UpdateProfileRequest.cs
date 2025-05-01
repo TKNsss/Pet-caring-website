@@ -1,10 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-<<<<<<< HEAD:Pet-caring-website/DTOs/User/UpdateProfileRequest.cs
 
 namespace Pet_caring_website.DTOs.User
-=======
-namespace Pet_caring_website.DTOs.User.UserProfile
->>>>>>> origin/backend-authentication:Pet-caring-website/DTOs/User/UserProfile/UpdateProfileRequest.cs
 {
     public class UpdateProfileRequest
     {

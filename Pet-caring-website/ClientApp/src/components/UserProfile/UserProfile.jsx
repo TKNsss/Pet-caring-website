@@ -3,27 +3,25 @@ import Sidebar from "./Sidebar/Sidebar";
 import PaymentInfo from "./PaymentInfo/PaymentInfo";
 import ProfileCard from "./ProfileCard/ProfileCard";
 import SubscriptionBox from "./SubscriptionBox/SubscriptionBox";
-import CoursesTimeline from "./CoursesTimeline/CoursesTimeline";
+import PetProfile from "./PetProfile/PetProfile";
 import { FaSignOutAlt } from "react-icons/fa";
 import { profileTopCat } from "../../constants";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../redux/features/auth/authSlice";
 import { useNavigate } from "react-router-dom";
-import { fetchUserProfile } from "../../redux/features/users/usersSlice";
+import { selectCurrentUser } from "../../redux/features/users/usersSlice";
+import PetCard from "./PetProfile/PetCard/PetCard";
 
 const UserProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const [section, setSection] = useState("My Dashboard");
-  const userData = useSelector((state) => state.users.user);
+  const user = useSelector(selectCurrentUser);
 
-  const handleLogout = async () => {
-    const result = await dispatch(logout());
-
-    if (logout.fulfilled.match(result)) {
-      dispatch(fetchUserProfile());
-      navigate("/login");
-    }
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
   };
 
   return (
@@ -33,14 +31,14 @@ const UserProfile = () => {
       <div className="mx-auto max-w-[64rem] flex-1 space-y-6 px-10 pb-10">
         <div className="relative flex items-center justify-between rounded-b-3xl bg-white px-6 py-4 shadow-md">
           <p className="text-xl font-bold text-black @md:text-3xl">
-            {userData?.username || "User"}
+            {user?.username || "User"}
           </p>
           <img
             src={profileTopCat}
             className="absolute top-[70%] left-1/2 hidden w-25 -translate-x-1/2 -translate-y-1/2 @3xl:block"
           />
           <button className="cursor-pointer" onClick={handleLogout}>
-            <FaSignOutAlt className="text-third transform text-xl transition-transform duration-300 hover:scale-110 @md:text-3xl" />
+            <FaSignOutAlt className="text-third scale-item text-xl @md:text-3xl" />
           </button>
         </div>
 
@@ -49,8 +47,8 @@ const UserProfile = () => {
           {section === "My Dashboard" && (
             <>
               <div className="space-y-6 md:col-span-2">
-                <ProfileCard user={userData} />
-                <CoursesTimeline />
+                <ProfileCard user={user} />
+                <PetProfile section={section} setSection={setSection} />
               </div>
               <div className="space-y-6">
                 <PaymentInfo />
@@ -61,14 +59,14 @@ const UserProfile = () => {
 
           {section === "My Profile" && (
             <div className="space-y-6 md:col-span-3">
-              <ProfileCard user={userData} />
+              <ProfileCard user={user} />
             </div>
           )}
 
           {section === "My Pets" && (
-            <div className="space-y-6 md:col-span-2">
-              {/* Replace with actual pets component */}
-              <div className="bg-white p-6 shadow-md">🐾 My Pets Section</div>
+            <div className="space-y-6 md:col-span-3">
+              <PetProfile section={section} setSection={setSection} />
+              <PetCard />
             </div>
           )}
 

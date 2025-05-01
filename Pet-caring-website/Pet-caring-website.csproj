@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="DTOs\Pet\CreatePet.cs" />
+    <None Include="DTOs\Pet\PetDto.cs" />
   </ItemGroup>
 
   <ItemGroup>

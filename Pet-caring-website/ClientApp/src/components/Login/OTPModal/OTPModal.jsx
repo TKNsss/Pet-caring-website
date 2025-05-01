@@ -67,7 +67,7 @@ const OTPModal = ({
       <div className="text-center">
         <button
           onClick={async () => {
-            setSendingOtp(true);  
+            setSendingOtp(true);
             try {
               await onForgotPassword();
             } catch (error) {
@@ -75,7 +75,7 @@ const OTPModal = ({
             }
             setSendingOtp(false); // Reset after the request is complete
           }}
-          className="font-Poppins rounded-md bg-blue-500 px-3 py-2 text-sm text-white transition hover:bg-blue-600"
+          className={`font-Poppins rounded-md bg-blue-500 px-3 py-2 text-sm text-white transition hover:bg-blue-600 ${sendingOtp ? "points-event-none" : "cursor-pointer"}`}
         >
           {sendingOtp ? (
             <FaSpinner className="animate-spin text-white" />
@@ -99,7 +99,7 @@ const OTPModal = ({
       isOpen={isOpen}
       onRequestClose={onRequestClose}
       contentLabel="Enter OTP"
-      className="mx-auto mt-40 w-96 rounded-xl bg-white p-6 shadow-lg outline-none"
+      className="mx-auto mt-40 rounded-xl bg-white p-6 shadow-lg outline-none"
       overlayClassName="fixed inset-0 bg-black/40 flex justify-center items-center"
     >
       <h2 className="mb-4 text-center text-xl font-semibold">Enter OTP</h2>

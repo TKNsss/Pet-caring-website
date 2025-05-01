@@ -35,10 +35,19 @@ public partial class Pet
     [Column("notes")]
     public string? Notes { get; set; }
 
+    [Column("status")]
+    public string? Status { get; set; }
+
+    [Column("adopt_date")]
+    public DateOnly? AdoptDate { get; set; }
+
+    [Column("avatar_url")]
+    public string? AvatarUrl { get; set; }
+
     [InverseProperty("Pet")]
     public virtual ICollection<PetOwner> PetOwners { get; set; } = new List<PetOwner>();
 
     [ForeignKey("SpcId")]
     [InverseProperty("Pets")]
-    public virtual Species? Spc { get; set; }
+    public virtual Species? Species { get; set; }
 }

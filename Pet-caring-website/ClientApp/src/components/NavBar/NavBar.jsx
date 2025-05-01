@@ -15,12 +15,13 @@ import { animateMenu, animateListItems } from "../../utils/motions";
 import { Outlet, Link } from "react-router-dom";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider.jsx";
 import { useSelector } from "react-redux";
+import { selectCurrentUser } from "../../redux/features/users/usersSlice.js";
 
 const NavBar = () => {
   const [openMenu, setOpenMenu] = useState(false);
   const [scope, animate] = useAnimate();
   const isDesktop = useMediaQueryContext();
-  const { user } = useSelector((state) => state.users);
+  const user = useSelector(selectCurrentUser);
 
   // Run animation on first render
   // use scope.current instead of "ul" here because the ref was within the ul -> to access both ul and li you must lift up the ref.
@@ -55,7 +56,12 @@ const NavBar = () => {
           <div className="text-txt-2 hidden @3xl:flex @3xl:items-center @3xl:gap-4">
             {user ? (
               <>
-                <RequestServiceBtn navBar={"NavBar"} bgColor={"bg-secondary"} txtColor={"text-white"} paddingX={"px-6"}/>
+                <RequestServiceBtn
+                  navBar={"NavBar"}
+                  bgColor={"bg-secondary"}
+                  txtColor={"text-white"}
+                  paddingX={"px-6"}
+                />
                 <UserDropdown user={user} />
               </>
             ) : (

@@ -83,7 +83,7 @@ namespace Pet_caring_website.Data
                     .HasMaxLength(20)
                     .HasColumnType("character varying(20)");
 
-                entity.HasOne(d => d.Spc).WithMany(p => p.Pets).HasConstraintName("fk_pets_species");
+                entity.HasOne(d => d.Species).WithMany(p => p.Pets).HasConstraintName("fk_pets_species");
             });
 
             modelBuilder.Entity<PetOwner>(entity =>

@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pet_caring_website.Data;
-using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Pet_caring_website.DTOs.User;
 using Pet_caring_website.Services;
+using Pet_caring_website.Utils;
 
 namespace Pet_caring_website.Controllers
 {
@@ -23,18 +23,18 @@ namespace Pet_caring_website.Controllers
 
         // Get user profile
         [HttpGet("profile")]
-        [Authorize] // Ensures only authenticated users can access this API.
         public async Task<IActionResult> GetUserProfile()
         {
             // The JWT token is automatically extracted by ASP.NET from the request.
             // Extracts the user's ID from the JWT token.
-            if (!TryGetUserId(out Guid userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
 
-            // Query the Database for User Information
-            var user = await _context.Users
+            try
+            {
+                var user = await _context.Users
                 .Where(u => u.UserId == userId)
                 .Select(u => new
                 {
@@ -49,14 +49,15 @@ namespace Pet_caring_website.Controllers
                 })
                 .FirstOrDefaultAsync();
 
-            if (user == null)
-                return NotFound(new { message = "Người dùng không tồn tại" });
+                if (user == null)
+                    return NotFound(new { message = "Người dùng không tồn tại" });
 
-            return Ok(new
+                return Ok(user);
+            }
+            catch (Exception ex)
             {
-                message = "Lấy thông tin người dùng thành công",
-                user
-            });
+                return StatusCode(500, new { message = "An error occurred", error = ex.Message });
+            }      
         }
 
         // Update user profile
@@ -64,9 +65,7 @@ namespace Pet_caring_website.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -107,6 +106,7 @@ namespace Pet_caring_website.Controllers
                 message = "Cập nhật thông tin thành công",
                 user = new
                 {
+                    user_id = user.UserId,
                     username = user.UserName,
                     firstname = user.FirstName,
                     lastname = user.LastName,
@@ -122,7 +122,7 @@ namespace Pet_caring_website.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {            
-            if (!TryGetUserId(out Guid userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -164,12 +164,11 @@ namespace Pet_caring_website.Controllers
 
             try
             {
-                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+                if (!UserUtils.TryGetUserId(User, out Guid userId))
                 {
                     return Unauthorized(new { message = "Bạn chưa đăng nhập" });
                 }
+
                 var result = await _imageService.UploadUserAvatarAsync(image, userId.ToString());
 
                 if (result == null)
@@ -188,6 +187,7 @@ namespace Pet_caring_website.Controllers
                 return Ok(new
                 {
                     message = "Upload avatar successfully.",
+                    user_id = user?.UserId,
                     url = avatarUrl,
                     publicId = result.PublicId
                 });
@@ -199,7 +199,6 @@ namespace Pet_caring_website.Controllers
             }
             catch (Exception ex)
             {
-                // For unexpected errors (e.g., Cloudinary errors, stream issues)
                 return StatusCode(500, new { error = "An error occurred while uploading the image.", details = ex.Message });
             }
         }
@@ -208,7 +207,7 @@ namespace Pet_caring_website.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteAccount()
         {
-            if (!TryGetUserId(out Guid userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -223,14 +222,6 @@ namespace Pet_caring_website.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Xóa tài khoản thành công" });
-        }
-
-        // Kiểm tra đăng nhập
-        private bool TryGetUserId(out Guid userId)
-        {
-            userId = Guid.Empty;
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return !string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out userId);
         }
     }
 }

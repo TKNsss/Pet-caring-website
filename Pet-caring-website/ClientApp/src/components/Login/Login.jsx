@@ -13,7 +13,6 @@ import {
   updateToken,
   forgotPassword,
 } from "../../redux/features/auth/authSlice";
-import { triggerRefreshUserProfile } from "../../redux/features/users/usersSlice";
 import { toast } from "react-toastify";
 import OTPModal from "./OTPModal/OTPModal";
 
@@ -101,7 +100,6 @@ const Login = () => {
 
       if (login.fulfilled.match(resultAction)) {
         navigate("/");
-        dispatch(triggerRefreshUserProfile());
         resetForm();
       }
     } else {
@@ -286,7 +284,7 @@ const Login = () => {
 
             <button
               type="submit"
-              className={`bg-third hover:bg-primary ${isRegistering ? "mt-4" : "mt-6"} w-full cursor-pointer rounded-lg py-3 font-medium text-white transition`}
+              className={`bg-third hover:bg-primary ${isRegistering ? "mt-4" : "mt-6"} w-full rounded-lg py-3 font-medium text-white transition ${status === "loading" ? "pointer-events-none" : "cursor-pointer"}`}
             >
               {isRegistering
                 ? handleTextChange("Register")

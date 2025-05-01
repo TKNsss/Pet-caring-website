@@ -5,7 +5,6 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { userDropdownLinks } from "../../../constants";
 import { useDispatch } from "react-redux";
 import { logout } from "../../../redux/features/auth/authSlice";
-import { fetchUserProfile } from "../../../redux/features/users/usersSlice";
 
 const UserToggleSection = ({ open, links, user, onLogout }) => {
   return (
@@ -55,15 +54,6 @@ const UserDropdown = ({ user }) => {
   const [open, setOpen] = useState(false);
   const dispatch = useDispatch();
 
-  const handleLogout = async () => {
-    // returns a Redux action object with a type, payload, and other metadata.
-    const result = await dispatch(logout());
-
-    if (logout.fulfilled.match(result)) {
-      await dispatch(fetchUserProfile())
-    }
-  };
-
   return (
     <>
       <div
@@ -79,7 +69,7 @@ const UserDropdown = ({ user }) => {
         open={open}
         links={userDropdownLinks}
         user={user}
-        onLogout={handleLogout}
+        onLogout={() => dispatch(logout())}
       />
     </>
   );

@@ -1,9 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import axiosCustom from "../../../api/axiosCustom";
 import { toast } from "react-toastify";
-import handleError from "../../../utils/error";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const initialState = {
   user: null,
@@ -17,16 +14,20 @@ export const login = createAsyncThunk(
   "auth/login",
   async ({ email, password }, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+      const response = await axiosCustom.post("/auth/login", {
         email,
         password,
       });
       // save to localStorage
       localStorage.setItem("token", response.data.token);
-      toast.success(`${response.data.message} 🎉`);
-      return response.data;
+
+      if (response.status >= 200 && response.status < 300) {
+        return response.data;
+      } else {
+        return thunkAPI.rejectWithValue(response.data);
+      }
     } catch (err) {
-      return handleError(err, thunkAPI);
+      return thunkAPI.rejectWithValue(err.response?.data || err.message);
     }
   },
 );
@@ -48,41 +49,34 @@ export const register = createAsyncThunk(
         payload.otpCode = otpCode;
       }
 
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/register`,
-        payload,
-      );
+      const response = await axiosCustom.post("/auth/register", payload);
 
-      toast.success(`${response.data.message} 🎉`);
-      return response.data;
+      if (response.status >= 200 && response.status < 300) {
+        return response.data;
+      } else {
+        return thunkAPI.rejectWithValue(response.data);
+      }
     } catch (err) {
-      return handleError(err, thunkAPI);
+      return thunkAPI.rejectWithValue(err.response?.data || err.message);
     }
   },
 );
-
-export const logout = createAsyncThunk("auth/logout", async (_, thunkAPI) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/auth/logout`);
-    localStorage.removeItem("token");
-    toast.info(`${response.data.message} 👋`);
-    return null;
-  } catch (err) {
-    return handleError(err, thunkAPI);
-  }
-});
 
 export const forgotPassword = createAsyncThunk(
   "auth/forgotPassword",
   async ({ email }, thunkAPI) => {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/forgot-password`,
-        { email },
-      );
-      toast.success(`${response.data.message} 🎉`);
+      const response = await axiosCustom.post("/auth/forgot-password", {
+        email,
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        return response.data;
+      } else {
+        return thunkAPI.rejectWithValue(response.data);
+      }
     } catch (err) {
-      return handleError(err, thunkAPI);
+      return thunkAPI.rejectWithValue(err.response?.message || err.message);
     }
   },
 );
@@ -91,13 +85,18 @@ export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async ({ email, otpCode }, thunkAPI) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/reset-password`, {
+      const response = await axiosCustom.post("/auth/reset-password", {
         email,
         otpCode,
       });
-      toast.success(`${response.data.message} 🎉`);
+      
+      if (response.status >= 200 && response.status < 300) {
+        return response.data;
+      } else {
+        return thunkAPI.rejectWithValue(response.data);
+      }
     } catch (err) {
-      return handleError(err, thunkAPI);
+      return thunkAPI.rejectWithValue(err.response?.message || err.message);
     }
   },
 );
@@ -110,6 +109,14 @@ const authSlice = createSlice({
       state.token = action.payload;
       localStorage.setItem("token", action.payload);
     },
+    logout: (state) => {
+      localStorage.removeItem("token");
+      toast.info("Logged out successfully! 👋");
+      state.user = null;
+      state.token = null;
+      state.status = "idle";
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -118,20 +125,18 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.user = action.payload;
+        state.user = action.payload.user;
         state.token = action.payload.token;
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
       })
-      .addCase(logout.fulfilled, (state) => {
-        state.status = "succeeded";
-        state.user = null;
-        state.token = null;
-      })
       .addCase(register.pending, (state) => {
         state.status = "loading";
+      })
+      .addCase(register.fulfilled, (state) => {
+        state.status = "succeeded";
       })
       .addCase(register.rejected, (state, action) => {
         state.status = "failed";
@@ -140,5 +145,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { updateToken } = authSlice.actions;
+export const { updateToken, logout } = authSlice.actions;
 export default authSlice.reducer;

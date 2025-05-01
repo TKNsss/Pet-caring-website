@@ -1,13 +1,13 @@
-import { toast } from "react-toastify";
+// src/utils/formatApiError.js
+import React from "react";
 
-const handleError = (err, thunkAPI) => {
+const formatApiError = (err) => {
   let errorMessage = err.message || "Some thing went wrong!";
 
   if (err.response?.data) {
     if (typeof err.response.data === "string") {
       errorMessage = err.response.data;
     } else if (err.response.data.errors) {
-      // Format errors into JSX for multi-line support in Toastify
       errorMessage = (
         <div>
           {Object.entries(err.response.data.errors).map(([field, messages]) => (
@@ -28,8 +28,7 @@ const handleError = (err, thunkAPI) => {
     }
   }
 
-  toast.error(errorMessage); // supports multi-line error messages
-  return thunkAPI.rejectWithValue(errorMessage);
+  return errorMessage;
 };
 
-export default handleError;
+export default formatApiError;

@@ -4,11 +4,10 @@ import { FaSpinner, FaUser } from "react-icons/fa";
 import { userFields } from "../../../constants";
 import {
   updateUserProfile,
-  triggerRefreshUserProfile,
   changePassword,
   uploadUserAvatar,
 } from "../../../redux/features/users/usersSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
 const ProfileCard = ({ user }) => {
@@ -16,7 +15,9 @@ const ProfileCard = ({ user }) => {
   const [unEditable, setUnEditable] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
-  const [spinner, setSpinner] = useState(false);
+  const uploadAvaStatus = useSelector((state) => state.users.uploadAvaStatus);
+  const updateStatus = useSelector((state) => state.users.updateStatus);
+  const changePwStatus = useSelector((state) => state.users.changePwStatus);
 
   const dispatch = useDispatch();
 
@@ -103,10 +104,9 @@ const ProfileCard = ({ user }) => {
 
     try {
       await dispatch(updateUserProfile(updatedProfile)).unwrap();
-      dispatch(triggerRefreshUserProfile());
       setUnEditable(true);
     } catch (err) {
-      toast.error(err.message || "Failed to update profile.");
+      console.log(err.message || "Failed to update profile.");
     }
   };
 
@@ -122,18 +122,14 @@ const ProfileCard = ({ user }) => {
       return;
     }
 
-    setSpinner(true);
-
     try {
       await dispatch(
         changePassword({ oldPassword, newPassword, newConfirmedPassword }),
       ).unwrap();
-
       resetForm();
     } catch (err) {
-      toast.error(err.message || "Failed to change password.");
+      console.log(err.message || "Failed to change password.");
     }
-    setSpinner(false);
   };
 
   const handleImageUpload = async (e) => {
@@ -146,14 +142,11 @@ const ProfileCard = ({ user }) => {
     const formData = new FormData();
     formData.append("img", file);
 
-    setSpinner(true);
     try {
       await dispatch(uploadUserAvatar(formData)).unwrap();
-      dispatch(triggerRefreshUserProfile());
     } catch (err) {
-      toast.error(err.message || "Failed to upload avatar.");
+      console.log(err.message || "Failed to upload avatar.");
     }
-    setSpinner(false);
   };
 
   return (
@@ -184,10 +177,10 @@ const ProfileCard = ({ user }) => {
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  className="hidden"
+                  className={`${uploadAvaStatus === "pending" && "pointer-events-none"} hidden`}
                 />
-                {spinner ? (
-                  <FaSpinner className="pointer-events-none mx-auto animate-spin text-blue-500" />
+                {uploadAvaStatus === "pending" ? (
+                  <FaSpinner className="mx-auto animate-spin text-blue-500" />
                 ) : (
                   "Upload Image"
                 )}
@@ -312,18 +305,22 @@ const ProfileCard = ({ user }) => {
                     {unEditable ? "Update" : "Cancel"}
                   </button>
                   <button
-                    className={`rounded-md bg-green-500 px-4 py-2 text-white ${unEditable ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-green-600"}`}
+                    className={`rounded-md bg-green-500 px-4 py-2 text-white ${unEditable ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-green-600"} ${updateStatus === "pending" && "pointer-events-none"}`}
                     onClick={handleUpdateProfile}
                     disabled={unEditable}
                   >
-                    Save
+                    {updateStatus === "pending" ? (
+                      <FaSpinner className="mx-auto animate-spin text-white" />
+                    ) : (
+                      "Save"
+                    )}
                   </button>
                   <button
-                    className={`bg-third rounded-md px-4 py-2 text-white @3xl:col-span-2 ${unEditable ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-purple-900"}`}
+                    className={`bg-third rounded-md px-4 py-2 text-white @3xl:col-span-2 ${unEditable ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-purple-900"} ${changePwStatus === "pending" && "pointer-events-none"}`}
                     onClick={handleChangePassword}
                     disabled={unEditable}
                   >
-                    {spinner ? (
+                    {changePwStatus === "pending" ? (
                       <FaSpinner className="mx-auto animate-spin text-white" />
                     ) : (
                       "Save Password"
@@ -377,22 +374,11 @@ const ProfileCard = ({ user }) => {
               </p>
             </div>
           )}
-
-          <div className="mt-2 flex gap-3">
-            {["instagram", "facebook", "vk"].map((icon) => (
-              <span
-                key={icon}
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-sm"
-              >
-                🌐
-              </span>
-            ))}
-          </div>
         </div>
       </div>
 
       <button
-        className={`text-third @3xl:self-start ${update && "hidden"} transform cursor-pointer transition-transform duration-300 hover:scale-110`}
+        className={`text-third @3xl:self-start ${update && "hidden"} scale-item`}
         onClick={() => setUpdate((prev) => !prev)}
       >
         <BsPencilSquare className="text-3xl @3xl:text-2xl" />

@@ -47,6 +47,11 @@ import {
   logoWhite,
   womanHoldCat,
   profileTopCat,
+  ductTape1,
+  ductTape2,
+  noDataFoundImg,
+  circle,
+  fileUploadImg,
 } from "../assets";
 
 export const navLinks = [
@@ -262,6 +267,26 @@ export const userFields = [
   { label: "Confirm New Password", name: "newConfirmedPassword" },
 ];
 
+export const petFields = [
+  { label: "Pet name", name: "petName" },
+  { label: "Adoption Date", name: "adoptDate" },
+  { label: "Age (months)", name: "age" },
+  { label: "Species", name: "spcId" },
+  { label: "Breed", name: "breed" },
+  { label: "Gender", name: "gender" },
+  { label: "Weight", name: "weight" },
+  { label: "Notes", name: "notes" },
+  { label: "Status", name: "status" },
+]
+
+export const petColorPalettes = [
+  "bg-pl-1",
+  "bg-pl-2",
+  "bg-pl-3",
+  "bg-pl-4",
+  "bg-pl-5",
+];
+
 export {
   logo,
   cryIcon,
@@ -284,4 +309,9 @@ export {
   logoWhite,
   womanHoldCat,
   profileTopCat,
+  ductTape1,
+  ductTape2,
+  noDataFoundImg,
+  circle,
+  fileUploadImg,
 };

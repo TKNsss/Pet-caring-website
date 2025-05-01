@@ -5,7 +5,7 @@ using Pet_caring_website.Data;
 using Pet_caring_website.DTOs.Pet;
 using Pet_caring_website.Models;
 using Pet_caring_website.Services;
-using System.Security.Claims;
+using Pet_caring_website.Utils;
 
 namespace Pet_caring_website.Controllers
 {
@@ -27,76 +27,45 @@ namespace Pet_caring_website.Controllers
         [Authorize]
         public async Task<IActionResult> GetALlPets()
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
 
-            var pets = await _context.PetOwners
+            try
+            {
+                var pets = await _context.PetOwners
                 .Where(po => po.UserId == userId)
                 .Select(po => new
                 {
                     pet_id = po.Pet.PetId,
                     pet_name = po.Pet.PetName,
+                    adopt_date = po.Pet.AdoptDate,
+                    age_in_months = po.Pet.Age,
+                    spc_id = po.Pet.SpcId,
                     breed = po.Pet.Breed,
-                    age = po.Pet.Age,
                     gender = po.Pet.Gender,
                     weight = po.Pet.Weight,
+                    status = po.Pet.Status,
                     notes = po.Pet.Notes,
-                    spc_id = po.Pet.SpcId
+                    avatar_url = po.Pet.AvatarUrl,
                 })
                 .ToListAsync();
-            // .ToListAsync(): Executes the LINQ query asynchronously and returns the results as a List<>.
-            return Ok(pets);
-        }
-
-        // GET api/v1/pets/5 (get specific pet)
-        [HttpGet("{id}")]
-        [Authorize]
-        public async Task<IActionResult> GetPetById(int id)
-        {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
-            {
-                return Unauthorized(new { message = "Bạn chưa đăng nhập" });
+                // .ToListAsync(): Executes the LINQ query asynchronously and returns the results as a List<>.
+                return Ok(pets);
             }
-
-            // Find the pet with its owner info
-            var petOwner = await _context.PetOwners
-                .Include(po => po.Pet)
-                .FirstOrDefaultAsync(po => po.PetId == id && po.UserId == userId);
-
-            if (petOwner == null)
+            catch (Exception ex)
             {
-                return NotFound(new { message = "Pet not found or you are not the owner" });
-            }
-
-            var pet = petOwner.Pet;
-
-            return Ok(new
-            {
-                pet_id = pet.PetId,
-                spc_id = pet.SpcId,
-                pet_name = pet.PetName,
-                breed = pet.Breed,
-                age = pet.Age,
-                gender = pet.Gender,
-                weight = pet.Weight,
-                notes = pet.Notes
-            });
+                return StatusCode(500, new { message = "An error occurred", error = ex.Message });
+            }    
         }
 
         // POST api/v1/pets
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> AddPet([FromBody] CreatePet request)
+        public async Task<IActionResult> AddPet([FromBody] PetDto request)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -108,12 +77,16 @@ namespace Pet_caring_website.Controllers
                 var pet = new Pet
                 {
                     SpcId = request.SpcId,
-                    PetName = request.PetName,
-                    Breed = request.Breed,
+                    PetName = request.PetName.Trim(),
+                    Breed = request.Breed?.Trim(),
                     Age = request.Age,
                     Gender = request.Gender,
                     Weight = request.Weight,
-                    Notes = request.Notes
+                    Notes = request.Notes?.Trim(),
+                    Status = request.Status,
+                    AdoptDate = request.AdoptDate.HasValue
+                        ? DateOnly.FromDateTime(request.AdoptDate.Value)
+                        : null,   
                 };
 
                 await _context.Pets.AddAsync(pet);
@@ -136,13 +109,15 @@ namespace Pet_caring_website.Controllers
                     pet = new
                     {
                         pet_id = pet.PetId,
-                        spc_id = pet.SpcId,
                         pet_name = pet.PetName,
+                        adopt_date = pet.AdoptDate,
+                        age_in_months = pet.Age,
+                        spc_id = pet.SpcId,
                         breed = pet.Breed,
-                        age = pet.Age,
                         gender = pet.Gender,
                         weight = pet.Weight,
-                        notes = pet.Notes
+                        status = pet.Status,
+                        notes = pet.Notes,                       
                     },      
                 });
             }
@@ -155,11 +130,10 @@ namespace Pet_caring_website.Controllers
 
         // PATCH api/v1/pets/5
         [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdatePet(int id, [FromBody] UpdatePet request)
+        [Authorize]
+        public async Task<IActionResult> UpdatePet(int id, [FromBody] PetDto request)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -186,23 +160,30 @@ namespace Pet_caring_website.Controllers
             }
 
             // Update fields that are provided
-            if (request.PetName != null)
-                pet.PetName = request.PetName;
+            if (!string.IsNullOrEmpty(request.PetName))
+                pet.PetName = request.PetName.Trim();
 
             if (request.Breed != null)
-                pet.Breed = request.Breed;  
+                pet.Breed = request.Breed.Trim();
 
-            if (request.Age.HasValue)  
-                pet.Age = request.Age.Value;         
+            pet.Age = request.Age;
+
+            pet.SpcId = request.SpcId;
 
             if (!string.IsNullOrEmpty(request.Gender))
-                pet.Gender = request.Gender;      
+                pet.Gender = request.Gender;
 
-            if (request.Weight.HasValue)
-                pet.Weight = request.Weight.Value;
+            if (request.Weight > 0)  
+                pet.Weight = request.Weight;
 
             if (request.Notes != null)          
-                pet.Notes = request.Notes;                 
+                pet.Notes = request.Notes.Trim();
+
+            if (request.Status != null)
+                pet.Status = request.Status;
+
+            if (request.AdoptDate.HasValue)
+                pet.AdoptDate = DateOnly.FromDateTime(request.AdoptDate.Value);
 
             try
             {
@@ -219,10 +200,12 @@ namespace Pet_caring_website.Controllers
                         spc_id = pet.SpcId,
                         pet_name = pet.PetName,
                         breed = pet.Breed,
-                        age = pet.Age,
+                        age_in_months = pet.Age,
                         gender = pet.Gender,
                         weight = pet.Weight,
-                        notes = pet.Notes
+                        notes = pet.Notes,
+                        status = pet.Status,
+                        adopt_date = pet.AdoptDate
                     },
                 });
             }
@@ -237,9 +220,7 @@ namespace Pet_caring_website.Controllers
         [Authorize]
         public async Task<IActionResult> DeletePet(int id)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            if (!UserUtils.TryGetUserId(User, out Guid userId))
             {
                 return Unauthorized(new { message = "Bạn chưa đăng nhập" });
             }
@@ -271,27 +252,50 @@ namespace Pet_caring_website.Controllers
 
         [HttpPost("upload-pet-image")]
         [Authorize]
-        public async Task<IActionResult> UploadPetImage([FromForm(Name = "img")] IFormFile image, [FromQuery] string petId)
+        public async Task<IActionResult> UploadPetImage([FromForm(Name = "img")] IFormFile image, [FromForm(Name = "petId")] int petId)
         {
             if (image == null || image.Length == 0)
                 return BadRequest(new { error = "No image file provided." });
 
-            if (string.IsNullOrWhiteSpace(petId))
+            if (petId <= 0)
                 return BadRequest(new { error = "Pet ID are required." });
 
             try
             {
-                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+                if (!UserUtils.TryGetUserId(User, out Guid userId))
                 {
                     return Unauthorized(new { message = "Bạn chưa đăng nhập" });
                 }
+
+                // Check if pet exists and belongs to the user
+                var petOwner = await _context.PetOwners
+                    .Include(po => po.Pet)
+                    .FirstOrDefaultAsync(po => po.PetId == petId && po.UserId == userId);
+
+                if (petOwner == null)
+                {
+                    return NotFound(new { message = "Pet not found or you are not the owner" });
+                }
+
                 var result = await _imageService.UploadPetImageAsync(image, userId.ToString(), petId);
+
+                if (result == null)
+                {
+                    return StatusCode(500, new { error = "Error uploading pet image. Please try again later." });
+                }
+                var petImgUrl = result.SecureUrl.ToString();
+                var pet = await _context.Pets.FindAsync(petId);
+
+                if (pet != null)
+                {
+                    pet.AvatarUrl = petImgUrl;
+                    await _context.SaveChangesAsync();
+                }
 
                 return Ok(new
                 {
                     message = "Pet image uploaded successfully.",
+                    pet_id = petId,
                     url = result.SecureUrl.ToString(),
                     publicId = result.PublicId
                 });

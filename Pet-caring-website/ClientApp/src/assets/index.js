@@ -39,6 +39,11 @@ import catFooterGallery from "./cat_footer.png";
 import logoWhite from "./logo-white.png";
 import womanHoldCat from "./woman-hold-cat.png";
 import profileTopCat from "./profileTopCat.png";
+import ductTape1 from "./duct-tape-1.png";
+import ductTape2 from "./duct-tape-2.png";
+import noDataFoundImg from "./no-data-found.jpg";
+import circle from "./circle.png";
+import fileUploadImg from "./file-upload.jpg";
 
 export {
   logo,
@@ -82,4 +87,9 @@ export {
   logoWhite,
   womanHoldCat,
   profileTopCat,
+  ductTape1,
+  ductTape2,
+  noDataFoundImg,
+  circle,
+  fileUploadImg,
 };

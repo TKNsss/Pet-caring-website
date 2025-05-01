@@ -15,6 +15,7 @@ html::-webkit-scrollbar {
   --font-chewy: "Chewy", serif;
   --font-Lato: "Lato", serif;
   --font-Monserrat: "Montserrat", sans-serif;
+  --font-OoohBaby: "Oooh Baby", cursive;
 
   /* colors */
   --color-primary: #5a3bb3;
@@ -37,6 +38,16 @@ html::-webkit-scrollbar {
   --color-profilePrimary: #5752ae;
   --color-profileSecondary: #dfeafc;
   --color-profileThird: #5f58b7;
+
+  --color-ink: #0000ff;
+  --color-pet: #f5efff;
+
+  /* palettes */
+  --color-pl-1: #091057;
+  --color-pl-2: #024CAA;
+  --color-pl-3: #EC8305;
+  --color-pl-4: #5B99C2;
+  --color-pl-5: #C62E2E;
 }
 
 @layer base {
@@ -97,5 +108,40 @@ html::-webkit-scrollbar {
     border-bottom-right-radius: 1000px;
     box-shadow: 0 19px 0 0 var(--color-profileSecondary);
     background-color: transparent;
+  }
+
+  .scale-item {
+    @apply transform cursor-pointer transition-transform duration-300 hover:scale-110;
+  }
+
+  .pet-form-label {
+    @apply text-xs font-semibold tracking-widest uppercase @sm:text-sm;
+  }
+
+  .pet-form-input {
+    @apply font-OoohBaby font-semibold text-ink border-none text-2xl outline-none;
+  }
+
+  .shadow-custom-1 {
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  }
+
+  .shadow-custom-2 {
+    box-shadow:
+      rgba(0, 0, 0, 0.24) 3px 3px 6px 0px inset,
+      rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset;
+  }
+
+  .bg-vintageGraphPaper {
+    background-image: url("./assets/graph-paper.jpg");
+    background-repeat: repeat;
+  }
+
+  .custom-radio-btn .checkmark {
+    @apply hidden
+  }
+
+  .custom-radio-btn input:checked + .checkmark {
+    @apply inline-block
   }
 }

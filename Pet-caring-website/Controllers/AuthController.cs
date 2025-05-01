@@ -145,7 +145,7 @@ namespace Pet_caring_website.Controllers
             if (existingUser == null || string.IsNullOrEmpty(existingUser.Password) ||
                 !PasswordService.VerifyPassword(request.Password, existingUser.Password))
             {
-                return Unauthorized("Thông tin đăng nhập không chính xác");
+                return Unauthorized(new { message = "Thông tin đăng nhập không chính xác" });
             }
 
             var token = GenerateJwtToken(existingUser);
@@ -161,26 +161,6 @@ namespace Pet_caring_website.Controllers
                     email = existingUser.Email,                   
                 }
             });
-        }
-
-        // API lấy thông tin user
-        [HttpGet("user-info")]
-        [Authorize]
-        public async Task<IActionResult> GetUserInfo()
-        {
-            var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-            if (userId == null)
-                return Unauthorized("Bạn chưa đăng nhập");
-
-            var user = await _context.Users.FindAsync(Guid.Parse(userId));
-            return Ok(user);
-        }
-
-        // API đăng xuất
-        [HttpPost("logout")]
-        public IActionResult Logout()
-        { 
-            return Ok(new { message = "Đăng xuất thành công!" });
         }
 
         // Gán quyền cho user
@@ -250,7 +230,7 @@ namespace Pet_caring_website.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null) 
-                return NotFound("Email không tồn tại trong hệ thống.");
+                return NotFound(new { message = "Email không tồn tại trong hệ thống." });
 
             try
             {

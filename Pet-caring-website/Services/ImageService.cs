@@ -16,26 +16,29 @@ namespace Pet_caring_website.Services
             _cloudinary = cloudinary;
         }
 
-        // IFormFile file: This represents the image uploaded from a form
-        // (e.g., from an HTML <input type="file">).
         // ImageUploadResult, which includes metadata like URL, public ID, size, etc.
-        public async Task<ImageUploadResult> UploadUserAvatarAsync(IFormFile file, string userId)
+        private async Task<ImageUploadResult> UploadImageAsync(
+            IFormFile file,
+            string uploadPreset,
+            string folder,
+            string publicId,
+            Transformation transformation = null)
         {
             ValidateImage(file);
 
             await using var stream = file.OpenReadStream();
 
-            // Asset folder: pcw/user -> pcw/user/userId/avatar
             var uploadParams = new ImageUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
-                UploadPreset = "pcw-user-photos",
-                PublicId = $"{userId}/avatar", // image name will be set to avatar.png,...
-                Transformation = new Transformation()
+                UploadPreset = uploadPreset,
+                Folder = folder,
+                PublicId = publicId,
+                Transformation = transformation ?? new Transformation()
                     .Width(300)
                     .Height(300)
                     .Crop("fill") // Crops the image to fit the exact dimensions while keeping subject in focus
-                    .Gravity("face") // Focuses crop on face if detected 
+                    .Gravity("face") // Focuses crop on face if detected
                     .FetchFormat("auto") // Converts to most efficient format automatically
                     .Quality("auto:eco") // Compresses to "eco" level — smaller file size with reasonable quality
             };
@@ -43,27 +46,23 @@ namespace Pet_caring_website.Services
             return await _cloudinary.UploadAsync(uploadParams);
         }
 
-        public async Task<ImageUploadResult> UploadPetImageAsync(IFormFile file, string userId, string petId)
+        // IFormFile file: This represents the image uploaded from a form
+        // (e.g., from an HTML <input type="file">).
+        public async Task<ImageUploadResult> UploadUserAvatarAsync(IFormFile file, string userId)
         {
-            ValidateImage(file);
+            var folder = "pcw/user";
+            var publicId = $"{userId}/avatar"; // image name will be set to avatar.png,...
 
-            await using var stream = file.OpenReadStream();
+            return await UploadImageAsync(file, "pcw-user-photos", folder, publicId);
+        }
 
-            // The folder will be named after the userId and petId, e.g., "pets/12345/pet123/image.jpg"
-            var uploadParams = new ImageUploadParams
-            {
-                File = new FileDescription(file.FileName, stream),
-                PublicId = $"pcw/{userId}/pets/{petId}",  // Pet image for the specific user and pet
-                Transformation = new Transformation()
-                    .Width(300)
-                    .Height(300)
-                    .Crop("fill") 
-                    .Gravity("face") 
-                    .FetchFormat("auto") 
-                    .Quality("auto:eco") 
-            };
+        public async Task<ImageUploadResult> UploadPetImageAsync(IFormFile file, string userId, int petId)
+        {
+            var folder = "pcw/pets"; // separate pets per user
+            var publicId = $"{userId}/{petId}";
+            // pet image will just use petId as name
 
-            return await _cloudinary.UploadAsync(uploadParams);
+            return await UploadImageAsync(file, "pcw-user-photos", folder, publicId);
         }
 
         private void ValidateImage(IFormFile file)
@@ -75,20 +74,6 @@ namespace Pet_caring_website.Services
 
             if (!validTypes.Contains(file.ContentType))
                 throw new InvalidOperationException("Unsupported image type. Only JPEG, PNG, and JPG are allowed.");
-        }
-
-        public string GetAvatarUrl(string userId)
-        {
-            var avatarUrl = _cloudinary.Api.UrlImgUp
-                .BuildUrl($"avatars/{userId}/avatar.jpg"); // Adjust the publicId based on your folder structure
-            return avatarUrl;
-        }
-
-        public string GetPetImageUrl(string userId, string petId)
-        {
-            var petImageUrl = _cloudinary.Api.UrlImgUp
-                .BuildUrl($"pets/{userId}/{petId}/image.jpg"); // Adjust the publicId based on your folder structure
-            return petImageUrl;
         }
     }
 }

@@ -24,11 +24,11 @@ import UserProfile from "./components/UserProfile/UserProfile";
 
 const App = () => {
   const dispatch = useDispatch();
-  const refreshTrigger = useSelector(state => state.users.refreshTrigger);
+  const fetchStatus = useSelector((state) => state.users.fetchStatus);
 
   useEffect(() => {
-    dispatch(fetchUserProfile());
-  }, [dispatch, refreshTrigger]);
+    if (fetchStatus === "idle") dispatch(fetchUserProfile());
+  }, [dispatch, fetchStatus]);
 
   return (
     <>
