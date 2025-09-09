@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Pet_caring_website.Services;
 using Pet_caring_website.Cloudinary;
 using CloudinaryDotNet;
+using Microsoft.AspNetCore.SignalR;
+using Pet_caring_website.Hubs;
 
 //  dependency injection (DI) container. This lets you inject and use it anywhere in
 //  your project (like ImageService) without manually creating it every time.
@@ -34,10 +36,13 @@ namespace Pet_caring_website
 
             // Đọc cấu hình EmailSetting từ appsettings.json
             builder.Services.Configure<EmailService>(builder.Configuration.GetSection("EmailSettings"));
+
             builder.Services.AddMemoryCache(); // Đăng ký IMemoryCache
             builder.Services.AddSingleton<EmailService>(); // Đăng ký EmailService
             builder.Services.AddScoped<OtpService>(); // Đăng ký OtpService
-            builder.Services.AddScoped<ImageService>(); // ✅ Đăng ký ImageService
+            builder.Services.AddScoped<ImageService>(); // ✅ Đăng ký ImageService 
+            builder.Services.AddSignalR(); // Đăng ký SignalR (triển khai real-time-push với các lịch hẹn)
+            builder.Services.AddHostedService<AutoAssignService>(); // Đăng ký tự động gán lịch hẹn
 
             // ✅ Cloudinary setup
             builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
@@ -163,6 +168,9 @@ namespace Pet_caring_website
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            // Map hub
+            app.MapHub<AppointmentHub>("/hubs/appointments");
 
             // Maps API controllers to handle HTTP requests.
             app.MapControllers();

@@ -23,4 +23,7 @@ public partial class PetOwner
     [ForeignKey("UserId")]
     [InverseProperty("PetOwners")]
     public virtual User User { get; set; } = null!;
+
+    // Thêm thuộc tính này để hỗ trợ quan hệ một-nhiều
+    public virtual ICollection<Pet> Pets { get; set; } = new List<Pet>();
 }

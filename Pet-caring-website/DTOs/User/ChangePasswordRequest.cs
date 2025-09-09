@@ -14,5 +14,5 @@ public class ChangePasswordRequest
 
     [Required(ErrorMessage = "Confirmed new password is required.")]
     [Compare("NewPassword", ErrorMessage = "The new password confirms does not match.")]
-    public string NewConfirmedPassword { get; set; } = null!;
+    public string NewConfirmedPassword { get; set; } = null!;   
 }
