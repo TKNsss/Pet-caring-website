@@ -4,15 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Pet_caring_website.Data;
 using Pet_caring_website.DTOs.Appointment;
-using Pet_caring_website.Models;
+using Pet_caring_website.Interfaces;
+using Pet_caring_website.Models.Appointments;
 using Pet_caring_website.Services;
 using Pet_caring_website.Hubs;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.SignalR;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Pet_caring_website.Controllers
 {
@@ -21,7 +20,7 @@ namespace Pet_caring_website.Controllers
     public class AppointmentsController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly IHubContext<AppointmentHub> _hub;
 
@@ -32,9 +31,10 @@ namespace Pet_caring_website.Controllers
             _configuration = configuration;
             _hub = hub;
         }
-        // POST api/<AppointmentsController>
+
+        // POST
         // Tạo lịch hẹn
-        [HttpPost("create-appointment")]
+        [HttpPost()]
         [Authorize]
         public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequest request)
         {
@@ -47,10 +47,10 @@ namespace Pet_caring_website.Controllers
                 });
             }
 
-            if (request.ApDate < DateTime.Now)
-            {
-                return BadRequest(new { message = "Thời gian hẹn không được nhỏ hơn thời gian hiện tại!" });
-            }
+            //if (request.ApDate < DateOnly.Now)
+            //{
+            //    return BadRequest(new { message = "Thời gian hẹn không được nhỏ hơn thời gian hiện tại!" });
+            //}
 
             if (!TryGetUserId(out Guid userId))
             {
@@ -58,16 +58,16 @@ namespace Pet_caring_website.Controllers
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
                 // Tạo buổi hẹn
                 var appointment = new Appointment
                 {
                     UserId = userId,
-                    ApDate = request.ApDate.ToLocalTime(),
+                    //ApDate = request.ApDate.ToLocalTime(),
                     Status = "Pending",
                     Notes = request.Notes,
-                    CreateAt = DateTime.Now
                 };
 
                 _context.Appointments.Add(appointment);
@@ -151,6 +151,7 @@ namespace Pet_caring_website.Controllers
                 return StatusCode(500, new { message = "Có lỗi xảy ra khi tạo lịch hẹn!", error = ex.Message });
             }
         }
+
         // Chưa có tự động hủy lịch hẹn khi quá hạn (tạo thêm)
         [HttpGet("confirm-appointment")]
         public async Task<IActionResult> ConfirmAppointmentByToken([FromQuery] string token)
@@ -186,33 +187,6 @@ namespace Pet_caring_website.Controllers
             appointment.Status = "User-Confirmed";
             _context.Appointments.Update(appointment);
             await _context.SaveChangesAsync();
-
-            // —— Real‑time push đến vets nhóm "vets" ——
-            var payload = new
-            {
-                appointment.ApId,
-                appointment.ApDate,
-                Customer = new
-                {
-                    appointment.User.UserId,
-                    appointment.User.FirstName,
-                    appointment.User.LastName,
-                    PetOwners = appointment.User.PetOwners.Select(p => new
-                    {
-                        p.Id,
-                        Pets = p.Pets.Select(pe => new { pe.PetName, pe.PetId }) // Thông tin thú cưng
-                    })
-                },
-                Services = appointment.AppointmentDetails.Select(d => new
-                {
-                    d.PetId,
-                    PetName = _context.Pets.Where(p => p.PetId == d.PetId).Select(p => p.PetName).FirstOrDefault(),
-                    ServiceName = d.Svd.Service.ServiceName,
-                    d.PricePerService
-                })
-            };
-            await _hub.Clients.Group("vets")
-                .SendAsync("NewAppointmentConfirmed", payload);
 
             return Ok(new { message = "Lịch hẹn đã được xác nhận thành công." });
         }

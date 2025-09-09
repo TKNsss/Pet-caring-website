@@ -3,6 +3,10 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# Ignore build output
+bin/
+obj/
+
 # appsettings
 appsettings.Development.json
 

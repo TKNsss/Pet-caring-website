@@ -11,8 +11,8 @@ public partial class Species
 
     [Column("spc_name")]
     [StringLength(50)]
-    public string? SpcName { get; set; }
+    public string SpcName { get; set; } = null!;
 
-    [InverseProperty("Spc")]
+    [InverseProperty("Species")]
     public virtual ICollection<Pet> Pets { get; set; } = new List<Pet>();
 }
