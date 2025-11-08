@@ -48,7 +48,7 @@ namespace Pet_caring_website.Controllers
         // POST: api/v1/pets
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreatePet([FromBody] CreatePetRequestDTO request)
+        public async Task<IActionResult> CreatePet([FromForm] CreatePetRequestDTO request)
         {
             var createdPet = await _petService.CreatePetAsync(request);
 

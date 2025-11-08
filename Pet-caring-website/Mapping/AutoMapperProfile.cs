@@ -32,7 +32,7 @@ namespace Pet_caring_website.MappingProfiles
                 .ForMember(dest => dest.PetName, opt => opt.MapFrom(src => src.PetName.Trim()))
                 .ForMember(dest => dest.Breed, opt => opt.MapFrom(src => src.Breed != null ? src.Breed.Trim() : null))
                 .ForMember(dest => dest.Notes, opt => opt.MapFrom(src => src.Notes != null ? src.Notes.Trim() : null))
-                .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.AvatarUrl != null ? src.AvatarUrl.Trim() : null))
+                .ForMember(dest => dest.AvatarUrl, opt => opt.Ignore())
                 .ForMember(dest => dest.AdoptDate, opt => opt.MapFrom(src =>
                     src.AdoptDate.HasValue
                         ? DateOnly.FromDateTime(src.AdoptDate.Value)

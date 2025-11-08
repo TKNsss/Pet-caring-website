@@ -3,8 +3,12 @@ import RequestServiceBtn from "./RequestServiceBtn";
 import { FaFacebook } from "react-icons/fa6";
 import { FaInstagram } from "react-icons/fa6";
 import { logo } from "../constants";
+import { useTranslation } from "react-i18next";
 
 const Footer = ({ title, petImgs, id }) => {
+  const { t } = useTranslation();
+  const workingHours = t("home.footer.workingHours", { returnObjects: true });
+  const footerTitle = title ?? t("home.footer.title");
   return (
     <div
       className={`${id === "RequestService" ? "bg-lightYellow" : "bg-primary"} relative text-white`}
@@ -58,7 +62,7 @@ const Footer = ({ title, petImgs, id }) => {
             {/* <!-- Khối nội dung ở giữa --> */}
             <div className="flex-1 space-y-4 text-center">
               <h2 className="font-Poppins text-[15px] font-bold text-[#F1F1F1] sm:text-[25px] lg:text-[25px] xl:text-[35px]">
-                {title}
+                {footerTitle}
               </h2>
               <RequestServiceBtn
                 bgColor={"bg-mdYellow"}
@@ -101,41 +105,43 @@ const Footer = ({ title, petImgs, id }) => {
             {/* First Column - Working Hours */}
             <div className="text-center">
               <h1 className="font-chewy mb-[10px] text-[25px] leading-[100%] font-normal xl:text-[22px]">
-                Working Hours
+                {t("home.footer.workingHoursTitle")}
               </h1>
               <ul className="list-disc text-center text-[#000000]">
-                <li className="font-Monserrat text-[16px] [&::marker]:text-[0.5rem]">
-                  Monday - Sunday: 10 am - 9 pm
-                </li>
-                <li className="font-Monserrat text-[16px] [&::marker]:text-[0.5rem]">
-                  All holidays & school vacations
-                </li>
+                {workingHours.map((line) => (
+                  <li
+                    key={line}
+                    className="font-Monserrat text-[16px] [&::marker]:text-[0.5rem]"
+                  >
+                    {line}
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Second Column - Location */}
             <div className="text-center">
               <h1 className="font-chewy mb-[10px] text-[25px] leading-[100%] font-normal xl:text-[22px]">
-                Location
+                {t("home.footer.locationTitle")}
               </h1>
               <p className="font-Monserrat text-[16px] text-[#000000]">
-                Happy Pet Care 115 Sutherland
+                {t("home.footer.locationLine1")}
               </p>
               <p className="font-Monserrat text-[16px] text-[#000000]">
-                Rd.Brighton, MA
+                {t("home.footer.locationLine2")}
               </p>
             </div>
 
             {/* Third Column - Contact (Moves back to column 3 at @4xl) */}
             <div className="text-center @xl:col-span-2 @5xl:col-span-1">
               <h1 className="font-chewy mb-[10px] text-[25px] leading-[100%] font-normal xl:text-[22px]">
-                Contact
+                {t("home.footer.contactTitle")}
               </h1>
               <p className="font-Monserrat text-[16px] text-[#000000]">
-                Got question? Call us
+                {t("home.footer.contactPrompt")}
               </p>
               <p className="font-Monserrat text-[16px] font-bold text-[#000000]">
-                617-600-351
+                {t("home.footer.phone")}
               </p>
             </div>
 
@@ -143,14 +149,14 @@ const Footer = ({ title, petImgs, id }) => {
             <div className="flex flex-col items-center justify-center @xl:col-span-2 @5xl:col-span-3 @7xl:order-first @7xl:col-span-1 @7xl:max-w-[200px] @7xl:flex-row @7xl:gap-2">
               <img src={logo} alt="logo" className="w-[100px]" />
               <h1 className="font-chewy text-[20px] lg:text-[15px] xl:text-[22px]">
-                HAPPY PET CARE
+                {t("home.footer.brandTagline")}
               </h1>
             </div>
 
             {/* Fifth Column - Follow (Spans 2 columns at @xl) */}
             <div className="text-center @xl:col-span-2 @5xl:col-span-3 @7xl:col-span-1">
               <h1 className="font-chewy mb-[10px] hidden text-[25px] leading-[100%] font-normal xl:block xl:text-[22px]">
-                Follow
+                {t("home.footer.followTitle")}
               </h1>
               <div className="flex justify-center">
                 <FaInstagram className="text-third mr-[10px] text-[22px]" />

@@ -98,7 +98,7 @@
   }
 
   .log-input {
-    @apply focus:ring-third mt-2 w-full rounded-lg border p-2 focus:ring-2 focus:outline-none;
+    @apply focus:ring-third mt-2 w-full rounded-lg border p-2 focus:ring-2 focus:outline-none text-base;
   }
 
   .activeRadius::before {
@@ -123,6 +123,20 @@
     border-bottom-right-radius: 1000px;
     box-shadow: 0 19px 0 0 var(--color-profileSecondary);
     background-color: transparent;
+    z-index: -1;
+  }
+
+  @media (max-width: 448px) {
+    .activeRadius::before {
+      right: -4px;
+      bottom: -25.5px;
+    }
+
+    .activeRadius::after {
+      right: -5px;
+      top: -28px;
+      rotate: -2deg;
+    }
   }
 
   .scale-item {

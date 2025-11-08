@@ -95,8 +95,24 @@ namespace Pet_caring_website.Services
             await _context.PetOwners.AddAsync(petOwner);
             await _context.SaveChangesAsync();
 
-            await transaction.CommitAsync();
+            if (request.AvatarImg != null && request.AvatarImg.Length > 0)
+            {
+                var uploadResult = await _imageService.UploadPetImageAsync(request.AvatarImg, userId.ToString(), pet.PetId);
 
+                if (uploadResult == null)
+                    throw new InvalidOperationException("Error uploading pet image.");
+
+                pet.AvatarUrl = uploadResult.SecureUrl.ToString();
+
+                await _context.SaveChangesAsync();
+            }
+            else if (!string.IsNullOrEmpty(request.AvatarUrl))
+            {
+                pet.AvatarUrl = request.AvatarUrl.Trim();
+                await _context.SaveChangesAsync();
+            }
+
+            await transaction.CommitAsync();
             return _mapper.Map<PetResponseDTO>(pet);
         }
 

@@ -34,7 +34,9 @@ namespace Pet_caring_website.DTOs.Pet
 
         public DateTime? AdoptDate { get; set; }
 
-        [Url(ErrorMessage = "Invalid avatar URL format")]
+        [Url(ErrorMessage = "Invalid URL format")]
         public string? AvatarUrl { get; set; }
+
+        public IFormFile? AvatarImg { get; set; }
     }
 }

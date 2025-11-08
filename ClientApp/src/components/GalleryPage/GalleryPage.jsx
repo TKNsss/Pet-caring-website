@@ -7,21 +7,27 @@ import {
   dogFooterGallery,
   catFooterGallery,
 } from "../../constants";
+import { useTranslation } from "react-i18next";
 
 const GalleryPage = () => {
   const petImgs = [dogFooterGallery, catFooterGallery];
+  const { t } = useTranslation();
 
   return (
     <>
       <Header
         id={"Gallery"}
-        title={"OUR HAPPY MOMENTS"}
-        subTitle={"We bring joys and loves to your besties"}
+        title={t("gallery.page.heroTitle")}
+        subTitle={t("gallery.page.heroSubtitle")}
         bgColor={"bg-primary"}
         headerImg={galleryHeaderImg}
       />
       <PetService />
-      <Footer id="Gallery" title={"Bring Happiness to your pet"} petImgs={petImgs} />
+      <Footer
+        id="Gallery"
+        title={t("gallery.page.footerTitle")}
+        petImgs={petImgs}
+      />
     </>
   );
 };

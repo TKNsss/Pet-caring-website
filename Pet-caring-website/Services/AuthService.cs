@@ -9,6 +9,8 @@ using Pet_caring_website.DTOs.User;
 using Pet_caring_website.Helpers;
 using Pet_caring_website.Interfaces;
 using Pet_caring_website.Models;
+using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace Pet_caring_website.Services
 {
@@ -19,15 +21,17 @@ namespace Pet_caring_website.Services
         private readonly IEmailService _emailService;
         private readonly IJwtService _jwtService;
         private readonly GoogleAuthSettings _googleAuthSettings;
+        private readonly GithubAuthSettings _githubAuthSettings;
         private readonly IMapper _mapper;
 
-        public AuthService(AppDbContext context, IOtpService otpService, IEmailService emailService, IJwtService jwtService, IOptions<GoogleAuthSettings> googleAuthSetting, IMapper mapper)
+        public AuthService(AppDbContext context, IOtpService otpService, IEmailService emailService, IJwtService jwtService, IOptions<GoogleAuthSettings> googleAuthSetting, IOptions<GithubAuthSettings> githubAuthSettings, IMapper mapper)
         {
             _context = context;
             _jwtService = jwtService;
             _otpService = otpService;
             _emailService = emailService;
             _googleAuthSettings = googleAuthSetting.Value;
+            _githubAuthSettings = githubAuthSettings.Value;
             _mapper = mapper;
         }
 
@@ -145,6 +149,119 @@ namespace Pet_caring_website.Services
             return new AuthResponseDTO
             {
                 Message = "Google login successful.",
+                Token = token,
+                User = _mapper.Map<UserInfoDTO>(user)
+            };
+        }
+
+        public async Task<AuthResponseDTO> LoginWithGitHubAsync(string code, string? state)
+        {
+            if (string.IsNullOrWhiteSpace(state))
+                throw new ArgumentException("GitHub state parameter is required.");
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
+
+            // 1️⃣ Exchange the code for an access token
+            var tokenRequest = new Dictionary<string, string>
+            {
+                ["client_id"] = _githubAuthSettings.ClientId,
+                ["client_secret"] = _githubAuthSettings.ClientSecret,
+                ["code"] = code,
+                ["redirect_uri"] = _githubAuthSettings.RedirectUri
+            };
+
+            var tokenResponse = await httpClient.PostAsync(
+                "https://github.com/login/oauth/access_token",
+                new FormUrlEncodedContent(tokenRequest)
+            );
+
+            var tokenContent = await tokenResponse.Content.ReadAsStringAsync();
+
+            if (!tokenResponse.IsSuccessStatusCode)
+                throw new InvalidOperationException($"GitHub token request failed: {tokenContent}");
+
+            using var tokenDocument = JsonDocument.Parse(tokenContent);
+            if (!tokenDocument.RootElement.TryGetProperty("access_token", out var accessTokenElement))
+            {
+                throw new InvalidOperationException("Failed to obtain GitHub access token.");
+            }
+
+            var accessToken = accessTokenElement.GetString();
+
+            if (string.IsNullOrEmpty(accessToken))
+                throw new InvalidOperationException("Failed to obtain GitHub access token.");
+
+            // 2️⃣ Get user profile
+            httpClient.DefaultRequestHeaders.UserAgent.Add(
+                new ProductInfoHeaderValue("PetCaringApp", "1.0")
+            );
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var userResponse = await httpClient.GetAsync("https://api.github.com/user");
+            if (!userResponse.IsSuccessStatusCode)
+                throw new InvalidOperationException("Failed to fetch GitHub user profile.");
+
+            var userJson = await userResponse.Content.ReadAsStringAsync();
+            using var userDoc = JsonDocument.Parse(userJson);
+            var root = userDoc.RootElement;
+
+            string? email = root.TryGetProperty("email", out var emailProperty)
+                ? emailProperty.GetString()
+                : null;
+            string login = root.TryGetProperty("login", out var loginProperty)
+                ? (loginProperty.GetString() ?? "unknown")
+                : "unknown";
+            string? avatarUrl = root.TryGetProperty("avatar_url", out var a) ? a.GetString() : null;
+            string? name = root.TryGetProperty("name", out var n) ? n.GetString() : null;
+
+            // 3️⃣ If no email, request the user’s emails separately
+            if (string.IsNullOrEmpty(email))
+            {
+                var emailResponse = await httpClient.GetAsync("https://api.github.com/user/emails");
+                if (emailResponse.IsSuccessStatusCode)
+                {
+                    var emailsJson = await emailResponse.Content.ReadAsStringAsync();
+                    var emails = JsonSerializer.Deserialize<List<GitHubEmail>>(
+                        emailsJson,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                    email = emails?
+                        .FirstOrDefault(e => e.Primary && e.Verified)?.Email
+                        ?? emails?.FirstOrDefault()?.Email;
+                }
+            }
+
+            if (string.IsNullOrEmpty(email))
+                throw new InvalidOperationException("GitHub account has no accessible email.");
+
+            // 4️⃣ Find or create user
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null)
+            {
+                user = new User
+                {
+                    UserId = Guid.NewGuid(),
+                    UserName = login,
+                    Email = email.ToLower(),
+                    FirstName = name,
+                    AvatarUrl = avatarUrl,
+                    Password = null,
+                    Role = "client"
+                };
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            // 5️⃣ Generate JWT token
+            var token = _jwtService.GenerateToken(user);
+
+            return new AuthResponseDTO
+            {
+                Message = "GitHub login successful.",
                 Token = token,
                 User = _mapper.Map<UserInfoDTO>(user)
             };

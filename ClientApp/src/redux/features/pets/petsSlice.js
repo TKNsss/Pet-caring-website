@@ -11,8 +11,10 @@ export const fetchPets = createAsyncThunk("/pets/fetchPets", (_, thunkAPI) =>
   handleApiRequest("get", "/pets", null, thunkAPI),
 );
 
-export const addPet = createAsyncThunk("/pets/addPet", (petData, thunkAPI) =>
-  handleApiRequest("post", "/pets", petData, thunkAPI),
+export const addPet = createAsyncThunk("/pets/addPet", (petFormData, thunkAPI) =>
+  handleApiRequest("post", "/pets", petFormData, thunkAPI, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }),
 );
 
 export const updateSinglePet = createAsyncThunk(

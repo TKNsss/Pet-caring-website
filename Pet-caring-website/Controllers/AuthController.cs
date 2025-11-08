@@ -33,6 +33,13 @@ namespace Pet_caring_website.Controllers
             return Ok(response);
         }
 
+        [HttpPost("github-login")]
+        public async Task<IActionResult> GitHubLogin([FromBody] GitHubLoginRequestDTO request)
+        {
+            var response = await _authService.LoginWithGitHubAsync(request.Code, request.State);
+            return Ok(response);
+        }
+
         // Đăng ký người dùng xác thực gmail với Otp
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDTO request)

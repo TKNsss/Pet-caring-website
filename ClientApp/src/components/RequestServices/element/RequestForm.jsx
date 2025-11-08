@@ -24,6 +24,7 @@ import {
 import {
   fetchServices,
   selectAllServices,
+  selectServicesMeta,
 } from "../../../redux/features/services/servicesSlice";
 import Pagination from "../../../shares/Pagination";
 import {
@@ -46,6 +47,7 @@ import {
   clearPets,
 } from "../../../redux/features/pets/petsSlice";
 import AppointmentModal from "../AppointmentModal/AppointmentModal";
+import { useTranslation } from "react-i18next";
 
 const renderStars = (rating) => {
   // number of full stars
@@ -81,14 +83,26 @@ const renderStars = (rating) => {
   );
 };
 
+const getServiceTranslationKey = (name) => {
+  if (!name) return null;
+  const key = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return key || null;
+};
+
 const RequestForm = () => {
   const [modalOpen, setModalOpen] = useState(false);
   // data
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const services = useSelector(selectAllServices);
   const fetchServicesStatus = useSelector(
     (state) => state.services.fetchStatus,
   );
+  const servicesMeta = useSelector(selectServicesMeta);
   const user = useSelector(selectCurrentUser);
   const fetchPetsStatus = useSelector((state) => state.pets.fetchStatus);
   const pets = useSelector(selectAllPets);
@@ -99,13 +113,12 @@ const RequestForm = () => {
     species: species.map((s) => ({ value: s.spc_id, label: s.spc_name })),
     // ...other dynamic sources
   };
-  // pagination (fetch all data)
-  const [currentPage, setCurrentPage] = useState(1);
-  const [servicesPerPage] = useState(5);
-  const idxOfLastService = currentPage * servicesPerPage;
-  const idxOfFirstService = idxOfLastService - servicesPerPage;
-  const currentServices = services.slice(idxOfFirstService, idxOfLastService);
-  const totalPages = Math.ceil(services.length / servicesPerPage);
+  const servicesPerPage = 5;
+  const [serviceQuery, setServiceQuery] = useState({
+    page: 1,
+    pageSize: servicesPerPage,
+    search: "",
+  });
   // scrollable effect
   const scrollRef = useRef(null);
   useHorizontalScroll(scrollRef);
@@ -127,15 +140,33 @@ const RequestForm = () => {
   }, [user, selectedPet]);
 
   useEffect(() => {
-    if (fetchServicesStatus === "idle") dispatch(fetchServices());
+    dispatch(fetchServices(serviceQuery));
+  }, [dispatch, serviceQuery]);
+
+  useEffect(() => {
     if (fetchSpecieStatus === "idle") dispatch(fetchSpecies());
     if (user && fetchPetsStatus === "idle") dispatch(fetchPets());
     if (!user) dispatch(clearPets());
-  }, [dispatch, fetchServicesStatus, fetchSpecieStatus, user, fetchPetsStatus]);
+  }, [dispatch, fetchSpecieStatus, user, fetchPetsStatus]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevFormData) => ({ ...prevFormData, [name]: value }));
+  };
+
+  const handleServiceSearchChange = (value) => {
+    setServiceQuery((prev) => ({
+      ...prev,
+      page: 1,
+      search: value,
+    }));
+  };
+
+  const handlePageChange = (page) => {
+    setServiceQuery((prev) => ({
+      ...prev,
+      page: Math.max(1, page),
+    }));
   };
 
   return (
@@ -177,9 +208,13 @@ const RequestForm = () => {
             <div className="relative flex items-center justify-center gap-3 p-7 text-sm font-semibold text-gray-700 @max-4xl:flex-wrap @4xl:gap-4">
               <div className="flex items-center gap-1 @4xl:self-end @5xl:mb-1">
                 <input
-                  placeholder="Find services here"
+                  placeholder={t("requestServices.searchPlaceholder")}
                   type="text"
                   className="border-third border-b-2 px-3 py-2 focus:outline-none"
+                  value={serviceQuery.search}
+                  onChange={(event) =>
+                    handleServiceSearchChange(event.target.value)
+                  }
                 />
 
                 <button className="bg-third border-third scale-item border-b p-2 hover:bg-purple-800 @4xl:hidden">
@@ -258,18 +293,18 @@ const RequestForm = () => {
 
                 {/* Start Time */}
                 <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="start-time"
-                    className="text-sm @max-md:text-center"
-                  >
-                    Start Time:
-                  </label>
+                <label
+                  htmlFor="start-time"
+                  className="text-sm @max-md:text-center"
+                >
+                  Start Time:
+                </label>
 
-                  <select
-                    id="start-time"
-                    className="cursor-pointer rounded border px-3 py-2 text-sm focus:ring-1 focus:ring-gray-600 focus:outline-none"
-                  >
-                    <option value="">Select a time</option>
+                <select
+                  id="start-time"
+                  className="cursor-pointer rounded border px-3 py-2 text-sm focus:ring-1 focus:ring-gray-600 focus:outline-none"
+                >
+                  <option value="">Select a time</option>
                     <option value="09:10">🟢09:10</option>
                     <option value="09:20">🟢09:20</option>
                     <option value="09:35">🟢09:35</option>
@@ -293,19 +328,19 @@ const RequestForm = () => {
             {/* Select Services */}
 
             <h3 className="text-third mt-42 mb-6 text-center text-2xl font-bold @md:mt-20 @3xl:text-left @7xl:mt-12">
-              Request Services
+              {t("requestServices.title")}
             </h3>
 
             <p className="font-Monserrat mb-8 text-center text-base @3xl:text-left">
-              Please select any services you’re interested in and fill out the
-              form
+              {t("requestServices.subtitle")}
             </p>
 
             {/* Services section */}
             <div>
               <div className="mb-3 flex items-center gap-3">
                 <h3 className="font-Monserrat text-base font-bold">
-                  Select Service(s)<span className="text-red-500">*</span>:
+                  {t("requestServices.labels.selectServices")}
+                  <span className="text-red-500">*</span>:
                 </h3>
 
                 <button
@@ -324,130 +359,158 @@ const RequestForm = () => {
                 className="flex gap-6 overflow-x-auto scroll-smooth p-3 sm:max-h-180 sm:flex-col sm:flex-wrap sm:overflow-y-auto"
                 ref={scrollRef}
               >
-                {fetchServicesStatus === "pending" && (
+                {fetchServicesStatus === "pending" ? (
                   <FaSpinner className="text-third mx-auto animate-spin text-5xl" />
-                )}
-
-                {fetchServicesStatus !== "pending" && !services.length ? (
+                ) : !services.length ? (
                   <div className="flex w-full justify-center">
-                    <img
-                      src={noDataFoundImg}
-                      className="shadow-custom-1 w-4/6"
-                    />
+                    <img src={noDataFoundImg} className="shadow-custom-1 w-4/6" />
                   </div>
                 ) : (
-                  currentServices.map((service, idx) => (
-                    <div
-                      className="shadow-custom-1 flex w-70 flex-none flex-col justify-between rounded-lg bg-white sm:w-140 sm:flex-row"
-                      key={service?.serviceId || idx}
-                    >
-                      {/* Hotel Image */}
-                      <div className="flex w-full items-center justify-center pt-4 sm:w-1/3 sm:pt-0 sm:pl-4">
-                        {service?.serviceImgUrl ? (
-                          <img
-                            src={service?.serviceImgUrl} // Replace with real image
-                            alt="service_img"
-                            className="max-h-45 object-contain shadow-lg sm:h-45 sm:max-h-none sm:w-full"
-                            title={`${service?.serviceName || "Service Image"}`}
-                          />
-                        ) : (
-                          <img
-                            src={fileUploadImg}
-                            alt="no-data"
-                            className="h-full max-h-45 w-full object-contain sm:max-h-none"
-                            title="No image available"
-                          />
-                        )}
-                      </div>
+                  services.map((service, idx) => {
+                    const serviceKey = getServiceTranslationKey(service?.serviceName);
+                    const getLocalizedValue = (field, fallback) => {
+                      if (!serviceKey) return fallback;
+                      return t(`requestServices.cards.${serviceKey}.${field}`, {
+                        defaultValue: fallback,
+                      });
+                    };
+                    const localizedName = getLocalizedValue(
+                      "title",
+                      service?.serviceName || "Service Title",
+                    );
+                    const localizedType = getLocalizedValue(
+                      "type",
+                      service?.serviceType || "Service Type",
+                    );
+                    const localizedDescription = getLocalizedValue(
+                      "description",
+                      service?.description || "Service description goes here.",
+                    );
+                    const durationLabel = (() => {
+                      const minDuration = service?.minDuration;
+                      const maxDuration = service?.maxDuration;
+                      if (minDuration && maxDuration) {
+                        return minDuration === maxDuration
+                          ? minDuration
+                          : `${minDuration} - ${maxDuration}`;
+                      }
+                      return minDuration || maxDuration || "Delivery";
+                    })();
+                    const formatCurrency = (value) =>
+                      value != null ? `$${Number(value).toFixed(2)}` : null;
+                    const priceLabel = (() => {
+                      const minPrice = formatCurrency(service?.minPrice);
+                      const maxPrice = formatCurrency(service?.maxPrice);
+                      if (minPrice && maxPrice) {
+                        return `${minPrice} - ${maxPrice}`;
+                      }
+                      return minPrice || maxPrice || "N/A";
+                    })();
 
-                      {/* Service Details */}
-                      <div className="w-full p-4 sm:w-2/3">
-                        {/* Title + Rating */}
-                        <div className="mb-2 flex flex-col justify-between gap-4 sm:flex-row">
-                          <div className="font-Inter">
-                            <h2
-                              className="font-Inter cursor-default text-base font-semibold text-black sm:max-w-42 sm:truncate sm:text-lg"
-                              title={service?.serviceName || "Service Title"}
-                            >
-                              {service?.serviceName || "Service Title"}
-                            </h2>
-                            <a
-                              href="#"
-                              className="text-third hover:text-primary flex items-center gap-1 text-sm underline"
-                            >
-                              <MdOutlinePets />
-                              {service?.serviceType || "Service Type"}
-                            </a>
-                            <p className="font-Inter mt-1 text-xs text-gray-400">
-                              {service?.isActive
-                                ? "(available) ✅"
-                                : "(unavailable) ❌"}
-                            </p>
-                          </div>
+                    return (
+                      <div
+                        className="shadow-custom-1 flex w-70 flex-none flex-col justify-between rounded-lg bg-white sm:w-140 sm:flex-row"
+                        key={service?.serviceId || idx}
+                      >
+                        <div className="flex w-full items-center justify-center pt-4 sm:w-1/3 sm:pt-0 sm:pl-4">
+                          {service?.serviceImgUrl ? (
+                            <img
+                              src={service?.serviceImgUrl}
+                              alt="service_img"
+                              className="max-h-45 object-contain shadow-lg sm:h-45 sm:max-h-none sm:w-full"
+                              title={service?.serviceName || "Service Image"}
+                            />
+                          ) : (
+                            <img
+                              src={fileUploadImg}
+                              alt="no-data"
+                              className="h-full max-h-45 w-full object-contain sm:max-h-none"
+                              title="No image available"
+                            />
+                          )}
+                        </div>
 
-                          <div className="text-center sm:text-right">
-                            <div className="flex items-center justify-center sm:justify-end">
-                              <span className="text-md mr-1.5 text-yellow-500">
-                                {renderStars(service?.ratingStars || 0)}
-                              </span>
-                              <GiTreeBranch className="rotate-180" />
-                              <div className="bg-third rounded px-2 py-1 text-sm font-bold text-white">
-                                {service?.ratingStars.toFixed(1) || "0.0"}
+                        <div className="w-full p-4 sm:w-2/3">
+                          <div className="mb-2 flex flex-col justify-between gap-4 sm:flex-row">
+                            <div className="font-Inter">
+                              <h2
+                                className="font-Inter cursor-default text-base font-semibold text-black sm:max-w-42 sm:truncate sm:text-lg"
+                                title={localizedName}
+                              >
+                                {localizedName}
+                              </h2>
+                              <a
+                                href="#"
+                                className="text-third hover:text-primary flex items-center gap-1 text-sm underline"
+                              >
+                                <MdOutlinePets />
+                                {localizedType}
+                              </a>
+                              <p className="font-Inter mt-1 text-xs text-gray-400">
+                                {service?.isActive
+                                  ? t("requestServices.status.available")
+                                  : t("requestServices.status.unavailable")}
+                              </p>
+                            </div>
+
+                            <div className="text-center sm:text-right">
+                              <div className="flex items-center justify-center sm:justify-end">
+                                <span className="text-md mr-1.5 text-yellow-500">
+                                  {renderStars(service?.ratingStars || 0)}
+                                </span>
+                                <GiTreeBranch className="rotate-180" />
+                                <div className="bg-third rounded px-2 py-1 text-sm font-bold text-white">
+                                  {Number(service?.ratingStars ?? 0).toFixed(1)}
+                                </div>
+                                <GiTreeBranch className="-scale-x-100 rotate-180 transform" />
                               </div>
-                              <GiTreeBranch className="-scale-x-100 rotate-180 transform" />
+                              <a
+                                href="#"
+                                className="text-third mt-1 inline-block text-xs underline sm:mr-3"
+                              >
+                                {service?.ratingCount || 0} {t("requestServices.labels.reviews")}
+                              </a>
                             </div>
-                            <a
-                              href="#"
-                              className="text-third mt-1 inline-block text-xs underline sm:mr-3"
+                          </div>
+
+                          <div className="border-t border-gray-200 pt-3">
+                            <div
+                              className="font-Inter mb-2 line-clamp-2 max-w-80 cursor-default space-y-1 text-sm text-gray-700"
+                              title={localizedDescription}
                             >
-                              {service?.ratingCount || 0} reviews
-                            </a>
-                          </div>
-                        </div>
-
-                        {/* Price and Availability */}
-                        <div className="border-t border-gray-200 pt-3">
-                          <div
-                            className="font-Inter mb-2 line-clamp-2 max-w-80 cursor-default space-y-1 text-sm text-gray-700"
-                            title={
-                              service?.desc || "Service description goes here."
-                            }
-                          >
-                            {service?.desc || "Service description goes here."}
-                          </div>
-
-                          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
-                            <div>
-                              <p className="font-Inter flex items-center gap-1 text-sm font-medium text-green-600">
-                                <LuAlarmClock />
-                                {service?.minDuration === service?.maxDuration
-                                  ? `${service?.minDuration || service?.maxDuration || "Delivery"}`
-                                  : `${service?.minDuration || "min"} - ${service?.maxDuration || "max"}`}
-                              </p>
-                              <p className="font-Inter mt-1 text-lg font-bold text-green-700">
-                                ${service?.minPrice || "min price"} - $
-                                {service?.maxPrice || "max price"}
-                              </p>
-                              <p className="font-Inter text-sm text-gray-500">
-                                Per pet
-                              </p>
+                              {localizedDescription}
                             </div>
-                            <button className="font-Inter bg-third w-full cursor-pointer self-end rounded px-4 py-2 text-sm text-white hover:bg-purple-800 sm:w-auto">
-                              Book Now
-                            </button>
+
+                            <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+                              <div>
+                                <p className="font-Inter flex items-center gap-1 text-sm font-medium text-green-600">
+                                  <LuAlarmClock />
+                                  {durationLabel}
+                                </p>
+                                <p className="font-Inter mt-1 text-lg font-bold text-green-700">
+                                  {priceLabel}
+                                </p>
+                                <p className="font-Inter text-sm text-gray-500">
+                                  {t("requestServices.labels.perPet")}
+                                </p>
+                              </div>
+                              <button className="font-Inter bg-third w-full cursor-pointer self-end rounded px-4 py-2 text-sm text-white hover:bg-purple-800 sm:w-auto">
+                                {t("requestServices.labels.bookNow")}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
-              {services.length > 0 && (
+              {servicesMeta?.totalPages > 1 && (
                 <Pagination
-                  totalPages={totalPages}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
+                  totalPages={servicesMeta?.totalPages ?? 1}
+                  currentPage={servicesMeta?.page ?? serviceQuery.page}
+                  onPageChange={handlePageChange}
                 />
               )}
             </div>
@@ -565,3 +628,4 @@ const RequestForm = () => {
 };
 
 export default RequestForm;
+

@@ -1,7 +1,7 @@
 import React from "react";
 import { IoArrowBackCircle } from "react-icons/io5";
 
-const Pagination = ({ totalPages, currentPage, setCurrentPage }) => {
+const Pagination = ({ totalPages, currentPage, onPageChange }) => {
   const getPageNumbers = (currentPage, totalPages, siblingCount = 1) => {
     const totalPageSlots = siblingCount * 2 + 5; // first, last, current, siblings, and 2 ellipses
 
@@ -50,7 +50,7 @@ const Pagination = ({ totalPages, currentPage, setCurrentPage }) => {
       {/* Previous Button */}
       <button
         type="button"
-        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
         disabled={currentPage === 1}
         className="cursor-pointer disabled:opacity-50"
       >
@@ -65,7 +65,7 @@ const Pagination = ({ totalPages, currentPage, setCurrentPage }) => {
           <button
             type="button"
             key={num}
-            onClick={() => setCurrentPage(num)}
+            onClick={() => onPageChange(num)}
             className={`text-fourth cursor-pointer @max-md:text-sm @max-md:px-2 rounded border border-purple-400 px-3 py-1 font-bold ${
               currentPage === num ? "bg-bgYellow" : "bg-white"
             }`}
@@ -78,7 +78,7 @@ const Pagination = ({ totalPages, currentPage, setCurrentPage }) => {
       {/* Next Button */}
       <button
         type="button"
-        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
         disabled={currentPage === totalPages}
         className="disabled:opacity-50"
       >

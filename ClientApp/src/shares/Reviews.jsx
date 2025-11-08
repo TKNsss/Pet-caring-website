@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { yelp } from "../assets";
-
 import { reviews } from "../constants";
+import { useTranslation } from "react-i18next";
 
 const Reviews = ({ bgColor }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t } = useTranslation();
 
   return (
     <div className={bgColor}>
@@ -12,15 +13,15 @@ const Reviews = ({ bgColor }) => {
         <div className="px-[2.25rem] py-15">
           <div className="hidden md:block">
             <div className="mb-[50px] flex items-end">
-              <h3 className="ml-10 text-left text-[30px] font-bold">
-                We’ve Earned{" "}
-                <span className="text-[30px] text-[#6F32BE]">4.9 rating</span>{" "}
-                on{" "}
-              </h3>
-              <img src={yelp} className="h-[61px] w-[152px]" alt="" />
+              <h3
+                className="ml-10 text-left text-[30px] font-bold"
+                dangerouslySetInnerHTML={{
+                  __html: t("home.reviews.desktopHeading"),
+                }}
+              />
+              <img src={yelp} className="h-[61px] w-[152px]" alt="Yelp" />
             </div>
 
-            {/* Review Container */}
             <div className="relative mt-8 flex snap-x snap-mandatory space-x-8 overflow-x-auto">
               {reviews.map((review, index) => (
                 <div
@@ -44,13 +45,12 @@ const Reviews = ({ bgColor }) => {
                     />
                     <div>
                       <h3 className="text-lg font-semibold">{review.name}</h3>
-                      {/* Star Rating */}
                       <div className="mb-2 flex items-center">
-                        {[...Array(5)].map((_, index) => (
+                        {[...Array(5)].map((_, starIndex) => (
                           <svg
-                            key={index}
+                            key={starIndex}
                             className={`h-5 w-5 ${
-                              index < Math.floor(review.rating)
+                              starIndex < Math.floor(review.rating)
                                 ? "text-[#F5B972]"
                                 : "text-gray-300"
                             }`}
@@ -65,38 +65,37 @@ const Reviews = ({ bgColor }) => {
                   </div>
 
                   <p className="font-Monserrat text-[20px] text-gray-700">
-                    {review.review}
+                    {review.reviewKey ? t(review.reviewKey) : review.review}
                   </p>
                 </div>
               ))}
             </div>
 
-            {/* Button */}
             <div className="mt-8 text-center">
               <button className="font-chewy rounded-full border-2 border-[#7759CC] px-20 py-2 text-[25px] text-[#7759CC] hover:bg-[#7759CC] hover:text-white">
-                See Reviews →
+                {t("home.reviews.button")}
               </button>
             </div>
           </div>
 
-          {/* mobile */}
           <div className="mx-auto flex flex-col items-center rounded-xl bg-white p-6 md:hidden">
-            {/* Title */}
             <div className="flex items-end gap-2">
-              <h3 className="text-lg font-bold">Review on</h3>
-              <img src={yelp} className="h-8" alt="Yelp Logo" />
+              <h3 className="text-lg font-bold">
+                {t("home.reviews.mobileTitle")}
+              </h3>
+              <img src={yelp} className="h-8" alt="Yelp" />
             </div>
 
             <h1 className="font-Inter text-[50px] leading-none font-bold text-[#7759CC]">
               {reviews[activeIndex].rating}
             </h1>
-            {/* Rating */}
+
             <h2 className="flex text-2xl font-bold text-[#6F32BE]">
-              {[...Array(5)].map((_, index) => (
+              {[...Array(5)].map((_, starIndex) => (
                 <svg
-                  key={index}
+                  key={starIndex}
                   className={`h-5 w-5 ${
-                    index < Math.floor(reviews[activeIndex].rating)
+                    starIndex < Math.floor(reviews[activeIndex].rating)
                       ? "text-[#F7CE72]"
                       : "text-gray-300"
                   }`}
@@ -108,30 +107,29 @@ const Reviews = ({ bgColor }) => {
               ))}
             </h2>
 
-            {/* Review */}
             <h3 className="mt-3 text-lg font-bold">
               {reviews[activeIndex].name}
             </h3>
             <p className="mt-1 text-center text-gray-600">
-              {reviews[activeIndex].review}
+              {reviews[activeIndex].reviewKey
+                ? t(reviews[activeIndex].reviewKey)
+                : reviews[activeIndex].review}
             </p>
 
-            {/* Dots */}
             <div className="mt-4 flex gap-2">
-              {reviews.map((_, index) => (
+              {reviews.map((_, dotIndex) => (
                 <button
-                  key={index}
+                  key={dotIndex}
                   className={`h-3 w-3 rounded-full transition-all ${
-                    activeIndex === index ? "bg-[#6F32BE]" : "bg-gray-300"
+                    activeIndex === dotIndex ? "bg-[#6F32BE]" : "bg-gray-300"
                   }`}
-                  onClick={() => setActiveIndex(index)}
+                  onClick={() => setActiveIndex(dotIndex)}
                 />
               ))}
             </div>
 
-            {/* Button */}
             <button className="font-chewy mt-4 rounded-full border-2 border-[#6F32BE] px-6 py-2 text-lg text-[#6F32BE] transition hover:bg-[#6F32BE] hover:text-white">
-              See Reviews
+              {t("home.reviews.mobileButton")}
             </button>
           </div>
         </div>

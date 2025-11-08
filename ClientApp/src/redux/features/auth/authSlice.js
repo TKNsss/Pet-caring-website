@@ -42,6 +42,17 @@ export const loginWithGoogle = createAsyncThunk(
   },
 );
 
+export const loginWithGitHub = createAsyncThunk(
+  "auth/githubLogin",
+  ({ code, state }, thunkAPI) =>
+    handleApiRequest(
+      "post",
+      "/auth/github-login",
+      { code, state },
+      thunkAPI,
+    ),
+);
+
 export const register = createAsyncThunk(
   "auth/register",
   ({ username, email, password, confirmPassword, otpCode }, thunkAPI) =>
@@ -98,6 +109,12 @@ const authSlice = createSlice({
         localStorage.setItem("token", action.payload.token);
       })
       .addCase(loginWithGoogle.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        localStorage.setItem("token", action.payload.token);
+      })
+      .addCase(loginWithGitHub.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.user = action.payload.user;
         state.token = action.payload.token;

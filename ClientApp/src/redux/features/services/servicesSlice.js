@@ -3,27 +3,49 @@ import {
   createEntityAdapter,
   createSlice,
 } from "@reduxjs/toolkit";
-import axiosCustom from "../../../api/axiosCustom";
+import handleApiRequest from "../../../utils/apiHandler";
+
+const sanitizeParams = (params = {}) => {
+  const merged = {
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 6,
+  };
+
+  if (params.search?.trim()) merged.search = params.search.trim();
+  if (params.type?.trim()) merged.type = params.type.trim();
+  if (params.isActive !== undefined) merged.isActive = params.isActive;
+  if (params.sortBy?.trim()) merged.sortBy = params.sortBy.trim();
+  if (params.sortDescending !== undefined)
+    merged.sortDescending = params.sortDescending;
+
+  return merged;
+};
 
 export const fetchServices = createAsyncThunk(
   "services/fetchServices",
-  async (_, thunkAPI) => {
-    try {
-      const response = await axiosCustom.get("/services");
-      return response.data;
-    } catch (err) {
-      return thunkAPI.rejectWithValue(err);
-    }
-  },
+  (params = {}, thunkAPI) =>
+    handleApiRequest("get", "/services", null, thunkAPI, {
+      params: sanitizeParams(params),
+    }),
 );
 
 const servicesAdapter = createEntityAdapter({
-  selectId: (services) => services.serviceId,
+  selectId: (service) => service.serviceId,
 });
 
 const initialState = servicesAdapter.getInitialState({
   fetchStatus: "idle",
   error: null,
+  meta: {
+    totalCount: 0,
+    totalPages: 0,
+    page: 1,
+    pageSize: 6,
+  },
+  lastQuery: {
+    page: 1,
+    pageSize: 6,
+  },
 });
 
 const servicesSlice = createSlice({
@@ -32,14 +54,30 @@ const servicesSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchServices.pending, (state) => {
+      .addCase(fetchServices.pending, (state, action) => {
         state.fetchStatus = "pending";
+        state.lastQuery = {
+          ...state.lastQuery,
+          ...(action.meta.arg || {}),
+        };
       })
       .addCase(fetchServices.fulfilled, (state, action) => {
         state.fetchStatus = "succeeded";
-        servicesAdapter.setAll(state, action.payload);
+        const payload = action.payload ?? {};
+        servicesAdapter.setAll(state, payload.data || []);
+        state.meta = payload.meta
+          ? {
+              totalCount: payload.meta.totalCount ?? payload.meta.TotalCount ?? 0,
+              totalPages: payload.meta.totalPages ?? payload.meta.TotalPages ?? 0,
+              page: payload.meta.page ?? payload.meta.Page ?? state.lastQuery.page,
+              pageSize:
+                  payload.meta.pageSize ??
+                  payload.meta.PageSize ??
+                  state.lastQuery.pageSize,
+            }
+          : state.meta;
       })
-      .addCase(fetchServices.rejected, (state) => {
+      .addCase(fetchServices.rejected, (state, action) => {
         state.fetchStatus = "rejected";
         state.error = action.payload;
       });
@@ -53,3 +91,6 @@ export const {
   selectById: selectServiceById,
   selectIds: selectServiceIds,
 } = servicesAdapter.getSelectors((state) => state.services);
+
+export const selectServicesMeta = (state) => state.services.meta;
+export const selectServicesFetchStatus = (state) => state.services.fetchStatus;

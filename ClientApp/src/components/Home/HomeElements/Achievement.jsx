@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { statsData } from "../../../constants";
+import { useTranslation } from "react-i18next";
 
 const Achievement = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { t } = useTranslation();
 
   // Xử lý chuyển sang mục trước
   const handlePrev = () => {
@@ -54,10 +56,10 @@ const Achievement = () => {
         </svg>
 
         <div className="px-[2.25rem] py-16 sm:px-6 lg:px-8">
-          <h3 className="mb-8 text-center text-[30px] font-bold text-[#33363F] md:text-3xl">
-            Our <span className="text-[30px] text-[#6F32BE]">numbers</span> tell
-            more about us
-          </h3>
+          <h3
+            className="mb-8 text-center text-[30px] font-bold text-[#33363F] md:text-3xl"
+            dangerouslySetInnerHTML={{ __html: t("home.achievements.heading") }}
+          />
 
           {/* màn lớn */}
           <div className="hidden grid-cols-3 gap-8 text-center sm:grid">
@@ -67,7 +69,9 @@ const Achievement = () => {
                   {item.number}
                 </h1>
                 <p className="font-Monserrat text-[20px] font-bold text-gray-600">
-                  {item.description}
+                  {item.descriptionKey
+                    ? t(item.descriptionKey)
+                    : item.description}
                 </p>
               </div>
             ))}
@@ -125,7 +129,9 @@ const Achievement = () => {
               </div>
 
               <p className="text-gray-700">
-                {statsData[currentIndex].description}
+                {statsData[currentIndex].descriptionKey
+                  ? t(statsData[currentIndex].descriptionKey)
+                  : statsData[currentIndex].description}
               </p>
             </div>
 

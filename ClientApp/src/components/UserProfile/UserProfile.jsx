@@ -28,9 +28,9 @@ const UserProfile = () => {
     <div className="bg-profileSecondary @container relative flex min-h-screen font-sans">
       <Sidebar section={section} setSection={setSection} />
 
-      <div className="mx-auto max-w-[64rem] flex-1 space-y-6 px-10 pb-10">
+      <div className="mx-auto max-w-[64rem] flex-1 space-y-6 @max-md:px-6 @max-md:pb-6 px-10 pb-10">
         <div className="relative flex items-center justify-between rounded-b-3xl bg-white px-6 py-4 shadow-md">
-          <p className="text-xl font-bold text-black @md:text-3xl">
+          <p className="text-base font-bold text-black @md:text-3xl">
             {user?.username || "User"}
           </p>
           <img

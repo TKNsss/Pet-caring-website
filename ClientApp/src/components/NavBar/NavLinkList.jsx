@@ -6,19 +6,23 @@ import { FiLogIn } from "react-icons/fi";
 import SearchBar from "./SearchBar/SearchBar";
 import UserDropdown from "./UserDropdown/UserDropdown";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../common/LanguageSwitcher";
 
 const SubLinkList = ({ links, isOpen, scrolled, id }) => {
+  const { t } = useTranslation();
+
   return (
     <ul
       className={`font-Poppins flex-col ${isOpen ? "flex" : "hidden"} z-100 w-full @3xl:absolute @3xl:top-7.5 ${id === "About" ? "@3xl:-left-6.5" : "@3xl:-left-3"}  @3xl:w-[7.813rem]`}
     >
       {links.map((subLink) => (
         <li
-          key={subLink.label}
+          key={subLink.labelKey ?? subLink.label}
           className={`text-txt-2 hover:bg-darkYellow @3xl:border-navBorder @3xl:hover:text-mdYellow @3xl:hover:bg-navSubBg cursor-default py-2 pl-10 transition-colors first:mt-2 hover:text-white @3xl:border-t @3xl:border-r @3xl:border-l @3xl:pr-3 @3xl:pl-3 @3xl:text-center @3xl:first:mt-0 @3xl:last:border-b ${scrolled ? "bg-lavender/90 shadow-lg backdrop-blur-sm" : "bg-lavender"}`}
         >
           <Link to={subLink.href} className="sub-link">
-            {subLink.label}
+            {subLink.labelKey ? t(subLink.labelKey) : subLink.label}
           </Link>
         </li>
       ))}
@@ -35,6 +39,7 @@ const NavLinkList = ({
   openLinks,
 }) => {
   const [openDropdown, setOpenDropdown] = useState({});
+  const { t } = useTranslation();
 
   // [id] is the dynamical key (instead of create a new key named "id", we use [id] for dynamically sets the key based on the value of id)
   const handleCLick = (id) => {
@@ -65,7 +70,7 @@ const NavLinkList = ({
             <Link to={link.href} className="flex items-center gap-2">
               <link.icon className="text-lg @3xl:hidden" />
               <span className="relative block">
-                {link.label}
+                {link.labelKey ? t(link.labelKey) : link.label}
                 <motion.span
                   className={`bg-txt-2 absolute bottom-0 h-0.5 w-full rounded ${isDesktop ? "group-hover:bg-txt-1" : "group-hover:bg-mdYellow"}`}
                   variants={hoveredEffect}
@@ -96,20 +101,23 @@ const NavLinkList = ({
 
       {!isDesktop && (
         <li>
-          <div className="border-t-navBorder text-txt-2 mx-auto flex w-full items-center justify-between border-t px-3.5 py-3">
-            <SearchBar />
+          <div className="border-t-navBorder text-txt-2 mx-auto flex w-full flex-col gap-3 border-t px-3.5 py-3">
+            <LanguageSwitcher />
+            <div className="flex w-full items-center justify-between">
+              <SearchBar />
 
-            {user ? (
-              <UserDropdown user={user} scrolled={scrolled} />
-            ) : (
-              <Link
-                to={"/login"}
-                className="hover:text-primary flex items-center gap-1"
-              >
-                <FiLogIn className="text-lg" />
-                Login
-              </Link>
-            )}
+              {user ? (
+                <UserDropdown user={user} scrolled={scrolled} />
+              ) : (
+                <Link
+                  to={"/login"}
+                  className="hover:text-primary flex items-center gap-1"
+                >
+                  <FiLogIn className="text-lg" />
+                  {t("nav.auth.login")}
+                </Link>
+              )}
+            </div>
           </div>
         </li>
       )}

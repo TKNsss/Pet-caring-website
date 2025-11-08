@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { home_gallery1, home_gallery2, home_gallery3 } from "../assets";
+import { useTranslation } from "react-i18next";
 
 const Gallery = ({ bgColor }) => {
   const images = [home_gallery1, home_gallery2, home_gallery3];
-
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { t } = useTranslation();
 
   const nextImage = () => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
@@ -51,14 +52,13 @@ const Gallery = ({ bgColor }) => {
           </svg>
 
           <div className="px-13 py-10">
-            {/* Tiêu đề */}
-            <h3 className="text-center text-3xl font-bold text-gray-900">
-              See Our{" "}
-              <span className="text-primary text-3xl font-bold">Happy</span>{" "}
-              Moments
-            </h3>
+            <h3
+              className="text-center text-3xl font-bold text-gray-900"
+              dangerouslySetInnerHTML={{
+                __html: t("home.gallery.headingDesktop"),
+              }}
+            />
 
-            {/* Hình ảnh */}
             <div className="mt-8 flex justify-between">
               <div className="h-70 w-70 overflow-hidden rounded-lg border-2 border-[#AFB1B6] xl:h-80 xl:w-80">
                 <img
@@ -80,47 +80,45 @@ const Gallery = ({ bgColor }) => {
                   alt="Cat Grooming"
                   className="h-full w-full object-cover"
                 />
-              </div>             
+              </div>
             </div>
 
-            {/* Nút bấm */}
             <div className="mt-8 text-center">
               <button className="font-chewy rounded-full border-2 border-[#7759CC] px-15 py-2 text-[25px] text-[#7759CC] hover:bg-[#7759CC] hover:text-white">
-                See Gallery →
+                {t("home.gallery.buttonDesktop")}
               </button>
             </div>
           </div>
         </div>
 
-        {/* mobile */}
         <div>
           <div className="bg-lightYellow relative block p-6 lg:hidden">
-            {/* Tiêu đề */}
-            <h3 className="text-center text-2xl font-bold text-gray-900 sm:text-3xl">
-              See Our <span className="text-primary">Happy</span> Moments
-            </h3>
+            <h3
+              className="text-center text-2xl font-bold text-gray-900 sm:text-3xl"
+              dangerouslySetInnerHTML={{
+                __html: t("home.gallery.headingMobile"),
+              }}
+            />
 
-            {/* Hình ảnh */}
             <div className="mt-6 flex items-center justify-center">
               <div className="relative rounded-lg">
                 <img
                   src={images[currentIndex]}
-                  alt="Gallery Image"
+                  alt="Gallery"
                   className="h-90 w-90 object-cover"
                 />
                 <button
                   onClick={nextImage}
                   className="absolute top-1/2 left-full -translate-x-1/2 -translate-y-1/2 rounded-full bg-yellow-400 px-4 py-3 text-3xl leading-none text-white shadow-md transition hover:bg-yellow-500"
                 >
-                  →
+                  {t("home.gallery.nextButton")}
                 </button>
               </div>
             </div>
 
-            {/* Nút Gallery */}
             <div className="mt-6 text-center">
               <button className="font-chewy border-third text-third hover:bg-third rounded-full border-2 px-15 py-2 text-[25px] hover:text-white">
-                See Gallery
+                {t("home.gallery.buttonMobile")}
               </button>
             </div>
           </div>

@@ -17,6 +17,8 @@ import { Outlet, Link } from "react-router-dom";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider.jsx";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../redux/features/users/usersSlice.js";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../common/LanguageSwitcher";
 
 const NavBar = () => {
   const [openMenu, setOpenMenu] = useState(false);
@@ -26,6 +28,7 @@ const NavBar = () => {
   const [scope, animate] = useAnimate();
   const isDesktop = useMediaQueryContext();
   const user = useSelector(selectCurrentUser);
+  const { t } = useTranslation();
 
   const toggleMenu = () => {
     if (openLinks) {
@@ -108,12 +111,13 @@ const NavBar = () => {
             className="relative flex cursor-pointer items-center gap-1.5"
           >
             <img src={logo} className="h-15 w-15 md:h-16 @md:w-16" />
-            <h2 className="mb-0 md:block">HAPPY PET CARE</h2>
+            <h2 className="mb-0 md:block">{t("nav.brand")}</h2>
           </Link>
 
           {isDesktop && <SearchBar />}
 
           <div className="text-txt-2 hidden md:flex md:items-center md:gap-4">
+            <LanguageSwitcher />
             {user ? (
               <>
                 <RequestServiceBtn
@@ -127,11 +131,11 @@ const NavBar = () => {
             ) : (
               <>
                 <button className="text-txt-2 hover:text-primary cursor-pointer font-medium">
-                  <Link to={"/register"}>Sign up</Link>
+                  <Link to={"/register"}>{t("nav.auth.signup")}</Link>
                 </button>
 
                 <button className="bg-primary hover:bg-txt-2 rounded-full px-4.5 py-2 font-medium text-white">
-                  <Link to={"/login"}>Log in</Link>
+                  <Link to={"/login"}>{t("nav.auth.login")}</Link>
                 </button>
               </>
             )}
@@ -157,7 +161,7 @@ const NavBar = () => {
           <button
             className="scale-item opacity-90 hover:opacity-100"
             onClick={toggleMenu}
-            title={openLinks ? "Hide links" : "Show links"}
+            title={openLinks ? t("nav.toggle.hide") : t("nav.toggle.show")}
           >
             {openLinks ? (
               <HiMiniMinusCircle className="text-secondary text-xl" />

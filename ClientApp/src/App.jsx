@@ -10,6 +10,7 @@ import { Routes, Route } from "react-router-dom";
 // components
 import NavBar from "./components/NavBar/NavBar";
 import Login from "./components/Login/Login";
+import GitHubCallback from "./components/Login/GitHubCallback";
 import NotFound from "./components/NotFound/NotFound";
 import Home from "./components/Home/Home";
 import OsDogwalk from "./components/Os_dogwalk/OsDogwalk";
@@ -56,6 +57,7 @@ const App = () => {
         {/* Authentication routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Login />} />
+        <Route path="/auth/github/callback" element={<GitHubCallback />} />
         {/* User profile */}
         <Route path="/user/profile" element={<UserProfile />} />
         {/* 404 Not Found */}

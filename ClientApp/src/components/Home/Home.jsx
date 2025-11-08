@@ -5,22 +5,20 @@ import Achieve from "./HomeElements/Achievement.jsx";
 import Reviews from "../../shares/Reviews.jsx";
 import Gallery from "../../shares/Gallery.jsx";
 import Footer from "../../shares/Footer.jsx";
+import { useTranslation } from "react-i18next";
 
 import { pictureMain2, footerHome, footerHome2 } from "../../constants";
 
 const Home = () => {
   const petImgs = [footerHome, footerHome2];
+  const { t } = useTranslation();
 
   return (
     <>
       <Header
         id={"Home"}
-        title={
-          'ONLY THE <span class="text-darkYellow">BEST</span> FOR YOUR BESTIES'
-        }
-        subTitle={
-          'Provide pet care expertise in <span class="text-darkYellow">Allston, Brighton, Brookline, Chestnut Hill, Fenway, Kenmore, Newton Corner, MA</span>'
-        }
+        title={t("home.hero.title")}
+        subTitle={t("home.hero.subtitle")}
         headerImg={pictureMain2}
         bgColor={"bg-primary"}
       />
@@ -28,7 +26,7 @@ const Home = () => {
       <Achieve />
       <Reviews />
       <Gallery bgColor={"bg-lightYellow"} />
-      <Footer title={"Bring Happiness to your pet"} petImgs={petImgs} />
+      <Footer title={t("home.footer.title")} petImgs={petImgs} />
     </>
   );
 };

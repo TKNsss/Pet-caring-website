@@ -1,49 +1,31 @@
-import React from "react";
-import { useState, useEffect } from "react";
-// 1) Import component LazyLoadImage từ thư viện react-lazy-load-image-component
-import { LazyLoadImage } from "react-lazy-load-image-component";
-// 2) Import file CSS cho hiệu ứng "blur"
-import "react-lazy-load-image-component/src/effects/blur.css";
+import React, { useState, useEffect } from "react";
 import { categories, images } from "../../../constants";
+import { useTranslation } from "react-i18next";
 
 const PetService = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(6);
+  const { t } = useTranslation();
 
-  const [visibleCount, setVisibleCount] = useState(6); // Ban đầu hiển thị 6 ảnh
-
-  // Dùng useEffect để cập nhật số ảnh ban đầu dựa theo chiều rộng trình duyệt
   useEffect(() => {
     const updateInitialCount = () => {
-      if (window.innerWidth < 1024) {
-        setVisibleCount(4);
-      } else {
-        setVisibleCount(6);
-      }
+      setVisibleCount(window.innerWidth < 1024 ? 4 : 6);
     };
 
-    // Cập nhật ngay khi component mount
-    // updateInitialCount();
-
-    // Lắng nghe sự thay đổi kích thước cửa sổ
     window.addEventListener("resize", updateInitialCount);
     return () => window.removeEventListener("resize", updateInitialCount);
   }, []);
 
-  // Cập nhật ngay khi component mount
-
-  // Hàm load thêm ảnh
   const toggleImages = () => {
-    if (isExpanded && window.innerWidth < 1024) {
-      setVisibleCount(4); // Thu gọn về 6 ảnh
-    } else if (isExpanded && window.innerWidth >= 1024) {
-      setVisibleCount(6);
+    if (isExpanded) {
+      setVisibleCount(window.innerWidth < 1024 ? 4 : 6);
     } else {
-      setVisibleCount(images.length); // Hiển thị tất cả ảnh
+      setVisibleCount(images.length);
     }
-    setIsExpanded(!isExpanded); // Đảo trạng thái
+    setIsExpanded((prev) => !prev);
   };
-  // Lọc ảnh dựa trên danh mục được chọn
+
   const filteredImages =
     selectedCategory === "all"
       ? images
@@ -52,13 +34,11 @@ const PetService = () => {
   return (
     <div className="web-container @container">
       <div className="mt-[86px] mb-8 px-[2.25rem]">
-        <h3 className="mb-11 text-3xl font-bold text-black">
-          Your Pet Is Our{" "}
-          <span className="text-3xl font-bold text-[#6F32BE]">Family</span>{" "}
-          Member
-        </h3>
+        <h3
+          className="mb-11 text-3xl font-bold text-black"
+          dangerouslySetInnerHTML={{ __html: t("gallery.page.heading") }}
+        />
 
-        {/* Thanh chọn danh mục */}
         <div className="mb-11 flex space-x-4 overflow-x-auto whitespace-nowrap xl:justify-between">
           {categories.map((cat) => (
             <button
@@ -70,7 +50,7 @@ const PetService = () => {
               }`}
               onClick={() => setSelectedCategory(cat.key)}
             >
-              {cat.label}
+              {cat.labelKey ? t(cat.labelKey) : cat.label}
             </button>
           ))}
         </div>
@@ -81,8 +61,7 @@ const PetService = () => {
               <img
                 key={idx}
                 src={img.src}
-                alt={`Image ${idx}`}
-                effect="blur"
+                alt={`Gallery ${idx + 1}`}
                 className="mb-8 rounded-lg shadow-md @max-5xl:w-[500px]"
               />
             ))}
@@ -92,7 +71,9 @@ const PetService = () => {
               onClick={toggleImages}
               className="border-third text-third hover:bg-third rounded-[25px] border-2 px-6 py-2 font-medium transition hover:text-white"
             >
-              {isExpanded ? "Show Less" : "Load More"}
+              {isExpanded
+                ? t("gallery.page.showLess")
+                : t("gallery.page.loadMore")}
             </button>
           </div>
         </div>

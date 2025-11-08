@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { LoginImg, catLoginImg } from "../../constants";
-import { FaArrowLeft } from "react-icons/fa";
+import { FaArrowLeft, FaGithub } from "react-icons/fa";
 import { useMediaQueryContext } from "../../contexts/MediaQueryProvider";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,6 +16,8 @@ import { toast } from "react-toastify";
 import OTPModal from "./OTPModal/OTPModal";
 import { fetchUserProfile } from "../../redux/features/users/usersSlice";
 import { GoogleLogin } from "@react-oauth/google";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../common/LanguageSwitcher";
 
 const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -27,6 +29,7 @@ const Login = () => {
   const navigate = useNavigate(); // navigate the user to a new page without the user interacting.
   const dispatch = useDispatch();
   const status = useSelector((state) => state.auth.status);
+  const { t } = useTranslation();
   // animation
   const formAnimation = isDesktop
     ? { x: isRegistering ? "100%" : "0%" }
@@ -103,11 +106,45 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async (credentialResponse) => {
-    await dispatch(loginWithGoogle(credentialResponse.credential));
+    const result = await dispatch(
+      loginWithGoogle(credentialResponse.credential),
+    );
+
+    if (loginWithGoogle.fulfilled.match(result)) {
+      toast.success(t("auth.google.success"));
+    }
+  };
+
+  const githubClientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+  const githubRedirectUri =
+    import.meta.env.VITE_GITHUB_REDIRECT_URI ||
+    `${window.location.origin}/auth/github/callback`;
+
+  const handleGitHubLogin = () => {
+    if (!githubClientId) {
+      toast.error(t("auth.github.missingClientId"));
+      return;
+    }
+
+    const stateValue = window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : Math.random().toString(36).slice(2);
+
+    sessionStorage.setItem("github_oauth_state", stateValue);
+
+    const params = new URLSearchParams({
+      client_id: githubClientId,
+      redirect_uri: githubRedirectUri,
+      scope: "read:user user:email",
+      state: stateValue,
+      allow_signup: "true",
+    });
+
+    window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
   };
 
   const handleTextChange = (text) => {
-    return status === "loading" ? "Loading..." : text;
+    return status === "loading" ? t("common.loading") : text;
   };
 
   const handleForgotPassword = async () => {
@@ -123,7 +160,7 @@ const Login = () => {
         setPurpose("forgot-password");
         setShowModal((prev) => !prev); // toggle
       } else {
-        toast.warning("Vui lòng điền email để lấy lại mật khẩu!");
+        toast.warning(t("auth.forgotPassword.missingEmail"));
       }
     } else {
       // fallback: just toggle visibility
@@ -167,6 +204,9 @@ const Login = () => {
           animate={formAnimation}
           transition={{ duration: 0.4, ease: "easeInOut" }}
         >
+          <div className="mb-4 flex justify-end">
+            <LanguageSwitcher />
+          </div>
           <div className="absolute -top-35 -left-6 md:hidden">
             <img src={catLoginImg} className="h-70 w-70" />
           </div>
@@ -269,7 +309,7 @@ const Login = () => {
                   checked={showPassword}
                 />
                 <label htmlFor="showPass" className="text-sm text-gray-600">
-                  Show password
+                  {t("auth.labels.showPassword")}
                 </label>
               </div>
               {!isRegistering && (
@@ -277,7 +317,7 @@ const Login = () => {
                   className="hover:text-third cursor-pointer text-sm text-gray-600 hover:underline"
                   onClick={() => handleDisplayModal("forgot-password")}
                 >
-                  Forgot password?
+                  {t("auth.labels.forgotPassword")}
                 </button>
               )}
             </div>
@@ -288,47 +328,57 @@ const Login = () => {
               data-testid="sign-in-register-btn"
             >
               {isRegistering
-                ? handleTextChange("Register")
-                : handleTextChange("Sign in")}
+                ? handleTextChange(t("auth.login.register"))
+                : handleTextChange(t("auth.login.signIn"))}
             </button>
           </form>
 
           <div className="mt-4 flex items-center justify-between">
             <hr className="w-full border-gray-300" />
-            <span className="mx-2 text-gray-500">OR</span>
+            <span className="mx-2 text-gray-500">{t("auth.login.divider")}</span>
             <hr className="w-full border-gray-300" />
           </div>
 
           {/* Social Signup */}
           <div className="mt-4">
-            <div className="flex w-full justify-center">
-              <GoogleLogin
-                useOneTap // Enables One Tap - remember past user credential
-                auto_select={false}
-                onSuccess={async (credentialResponse) => {
-                  await handleGoogleLogin(credentialResponse); 
-                  await dispatch(fetchUserProfile()).unwrap(); // Immediately fetch the user
-                  navigate("/");
-                }}
-                onError={() => toast.error("Google Login Failed ❌")}
-                text="signin_with"
-                shape="pill"
-              />
+            <div className="flex w-full flex-col gap-3">
+              <div className="flex w-full justify-center">
+                <GoogleLogin
+                  useOneTap // Enables One Tap - remember past user credential
+                  auto_select={false}
+                  onSuccess={async (credentialResponse) => {
+                    await handleGoogleLogin(credentialResponse);
+                    await dispatch(fetchUserProfile()).unwrap(); // Immediately fetch the user
+                    navigate("/");
+                  }}
+                  onError={() => toast.error(t("auth.google.error"))}
+                  text="signin_with"
+                  shape="pill"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGitHubLogin}
+                className="border-third text-third hover:bg-third/10 flex items-center justify-center gap-2 rounded-full border px-4 py-2 font-medium transition cursor-pointer"
+              >
+                <FaGithub size={22} />
+                {t("auth.github.button")}
+              </button>
             </div>
           </div>
-
           {/* Toggle between Login and Register */}
           <p
             className={`${isRegistering ? "mt-1.5" : "mt-4"} text-center text-base text-gray-600`}
           >
             {isRegistering
-              ? "Already have an account?"
-              : "Don't have an account?"}{" "}
+              ? t("auth.login.toggleHaveAccount")
+              : t("auth.login.toggleNoAccount")}{" "}
             <button
-              className="text-third hover:underline"
+              className="text-third cursor-pointer hover:underline"
               onClick={() => setIsRegistering(!isRegistering)}
             >
-              {isRegistering ? "Sign In" : "Register"}
+              {isRegistering ? t("auth.login.signIn") : t("auth.login.register")}
             </button>
           </p>
         </motion.div>

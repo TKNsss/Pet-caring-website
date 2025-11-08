@@ -6,6 +6,7 @@ import {
   buttonTransition,
 } from "../utils/motions";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const RequestServiceBtn = ({
   icon: Icon,
@@ -16,6 +17,7 @@ const RequestServiceBtn = ({
   navBar,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <motion.button
@@ -26,7 +28,7 @@ const RequestServiceBtn = ({
       onClick={() => navigate("/request-services")}
     >
       {Icon && <Icon className={`mr-2 inline text-xl ${iconColor}`} />}
-      Request Service
+      {t("common.buttons.requestService")}
     </motion.button>
   );
 };

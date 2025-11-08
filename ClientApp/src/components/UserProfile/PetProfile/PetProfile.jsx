@@ -58,7 +58,7 @@ const PetProfile = ({ section, setSection }) => {
     <div className="rounded-3xl bg-white p-4 shadow-md @xl:p-6">
       <div className="mb-4 flex flex-col items-center justify-between gap-1 @md:flex-row">
         <p
-          className="text-third text-lg font-bold @max-md:text-center"
+          className="text-third text-base font-bold @max-md:text-center"
           data-testid="user-profile-pet-profile-title"
         >
           Here's your lovely pets

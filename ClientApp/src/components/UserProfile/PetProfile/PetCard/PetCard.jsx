@@ -47,10 +47,13 @@ const PetCard = () => {
     weight: selectedPet?.weight || "",
     status: selectedPet?.status || "",
     notes: selectedPet?.notes || "",
+    avatarUrl: selectedPet?.avatarUrl || "",
   });
   const [formData, setFormData] = useState(getInitialFormData(selectedPet));
   const [disable, setDisable] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [petImg, setPetImg] = useState(selectedPet?.avatarUrl || null);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (fetchSpecieStatus === "idle") dispatch(fetchSpecies());
@@ -60,7 +63,7 @@ const PetCard = () => {
     setFormData(getInitialFormData(selectedPet || {}));
   }, [selectedPet]);
 
-  const handleChange = (e) => {
+  const handleInputValueChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevFormData) => ({
       ...prevFormData,
@@ -71,15 +74,27 @@ const PetCard = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
 
-    const newFormData = {
-      ...formData,
-      // this field in BE is Datetime so it'd be null or has value
-      adoptDate: formData.adoptDate === "" ? null : formData.adoptDate,
-      spcId: formData.spcId === "" ? null : parseInt(formData.spcId),
-    };
+    const formDataToSend = new FormData();
+    formDataToSend.append("petName", formData.petName);
+    formDataToSend.append("adoptDate", formData.adoptDate || "");
+    formDataToSend.append("ageInMonths", formData.ageInMonths);
+    formDataToSend.append("spcId", formData.spcId || "");
+    formDataToSend.append("breed", formData.breed);
+    formDataToSend.append("gender", formData.gender);
+    formDataToSend.append("weight", formData.weight);
+    formDataToSend.append("status", formData.status || "");
+    formDataToSend.append("notes", formData.notes || "");
+
+    if (petImg) {
+      if (typeof petImg === "string") {
+        formDataToSend.append("avatarUrl", petImg); // URL upload
+      } else {
+        formDataToSend.append("avatarImg", petImg); // File upload
+      }
+    }
 
     try {
-      await dispatch(addPet(newFormData)).unwrap();
+      await dispatch(addPet(formDataToSend)).unwrap();
       resetForm("clear");
     } catch (err) {
       toast.error("Add new pet failed.");
@@ -156,6 +171,32 @@ const PetCard = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setPetImg(e.target.files[0]);
+    }
+  };
+
+  const handleImgUrlUpload = () => {
+    let petImgUrl = formData["avatarUrl"];
+
+    if (!petImgUrl.trim()) return;
+
+    try {
+      // regular expression '.test()' method
+      const isImage = /\.(jpeg|jpg|png)$/i.test(petImgUrl);
+
+      if (!petImgUrl.startsWith("https") || isImage) {
+        toast.warning(
+          "Please enter a valid image URL (only accepts jpeg|jpg|png).",
+        );
+      }
+      setPetImg(petImgUrl);
+    } catch (err) {
+      toast.error("Invalid image URL.");
+    }
+  };
+
   const handleUploadPetImage = async (e) => {
     const file = e.target?.files?.[0];
 
@@ -183,6 +224,7 @@ const PetCard = () => {
   const resetForm = (resetType) => {
     if (resetType === "clear") {
       setFormData(getInitialFormData(null));
+      if (petImg) setPetImg(null);
       if (selectedPetId) dispatch(clearSelectedPet());
     } else if ((resetType = "initialPetData")) {
       setFormData(getInitialFormData(selectedPet));
@@ -209,7 +251,7 @@ const PetCard = () => {
               name="petName"
               type="text"
               placeholder="pet's name"
-              onChange={handleChange}
+              onChange={handleInputValueChange}
               value={formData.petName}
               required
               className="pet-form-input h-15 w-full p-2 @xl:text-4xl"
@@ -217,14 +259,14 @@ const PetCard = () => {
           </div>
 
           <div className="font-OoohBaby text-center font-semibold text-gray-500 @xl:min-w-[180px]">
-            <p className="text-base @sm:text-2xl">Photo or Drawing</p>
-            <p className="text-base @sm:text-2xl">w77 x h60 (mm)</p>
+            <p className="text-base @sm:text-xl">Photo or Drawing</p>
+            <p className="text-base @sm:text-xl">w77 x h60 (mm)</p>
           </div>
         </div>
 
         {/* Image and Size Note */}
-        <div className="mb-6 flex flex-col items-center justify-center gap-4 rounded-lg border-3 border-dotted border-gray-300 py-8">
-          <div className="shadow-custom-1 relative flex h-35 w-35 -rotate-2 transform items-center justify-center p-2.5 @lg:h-60 @lg:w-60">
+        <div className="mb-6 flex flex-col items-center justify-center gap-4 rounded-lg border-3 border-dotted border-gray-300 px-4 py-5">
+          <div className="shadow-custom-1 relative flex -rotate-2 transform items-center justify-center p-3 @lg:h-62 @lg:w-62">
             <div className="absolute -top-3 -right-3 z-1 @lg:-top-5 @lg:-right-5">
               <img src={ductTape1} className="h-10 w-10 @lg:h-20 @lg:w-20" />
             </div>
@@ -238,35 +280,96 @@ const PetCard = () => {
                 />
               </div>
             ) : (
-              <div
-                className="absolute h-full w-full p-4"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  // drag and drop work with dataTransfer
-                  const file = e.dataTransfer.files?.[0];
-                  if (file) handleUploadPetImage({ target: { files: [file] } });
-                }}
-              >
-                <label
-                  htmlFor="pet-image-upload"
-                  className={`${uploadPetImgStatus === "pending" ? "points-event-none" : "cursor-pointer"} inset-0 flex h-full cursor-pointer items-center justify-center border-3 border-dashed border-gray-300 text-gray-400 transition duration-200 hover:bg-black/10`}
+              <div>
+                <div
+                  className="mx-auto h-30 w-30 @max-lg:mx-auto @max-md:h-25 @max-md:w-25 @lg:h-35 @lg:w-35"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (!petImg) setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    // drag and drop work with dataTransfer
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) setPetImg(file);
+                  }}
                 >
-                  <span className="text-center text-sm font-medium @lg:text-base">
-                    {uploadPetImgStatus === "pending" ? (
-                      <FaSpinner className="text-ink mx-auto animate-spin text-3xl" />
+                  <label
+                    htmlFor="pet-image-upload"
+                    className={`${uploadPetImgStatus === "pending" && "points-event-none"} ${isDragging ? "border-third text-third" : "border-gray-300 text-gray-400 hover:bg-black/10"} ${!petImg && "cursor-pointer"} inset-0 flex h-full items-center justify-center border-3 border-dashed transition duration-200`}
+                  >
+                    {petImg ? (
+                      <div className="relative h-full w-full">
+                        <img
+                          src={
+                            typeof petImg === "string"
+                              ? petImg
+                              : URL.createObjectURL(petImg)
+                          }
+                          alt="pet-image"
+                          className="h-full w-full object-cover"
+                        />
+                        {/* Optional remove button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent bubbling to <label>
+                            e.preventDefault(); // Prevent default label->input click
+                            setPetImg(null);
+                          }}
+                          className="absolute top-2 right-2 z-1000 cursor-pointer rounded-full bg-white/80 px-2 py-1 text-xs text-red-500 shadow hover:bg-white"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     ) : (
-                      "Drag & Drop or Click to Upload"
+                      <span className="px-2.5 py-5 text-center text-[0.625rem] font-medium @md:py-9 @lg:text-base">
+                        {uploadPetImgStatus === "pending" ? (
+                          <FaSpinner className="text-ink mx-auto animate-spin text-3xl" />
+                        ) : (
+                          "Drag & Drop or Click to Upload"
+                        )}
+                      </span>
                     )}
-                  </span>
+
+                    {!petImg && (
+                      <input
+                        id="pet-image-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                    )}
+                  </label>
+                </div>
+
+                <div className="relative mt-1">
+                  <label
+                    htmlFor="pet-image-url"
+                    className="text-[0.625rem] @lg:text-sm"
+                  >
+                    Or upload from an URL
+                  </label>
                   <input
-                    id="pet-image-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleUploadPetImage}
+                    id="pet-image-url"
+                    type="text"
+                    name="avatarUrl"
+                    onChange={handleInputValueChange}
+                    value={formData["avatarUrl"]}
+                    placeholder="https://example.com/pet.jpg"
+                    className="log-input mt-1 rounded-sm border-gray-400 pr-15 text-xs @lg:text-sm"
                   />
-                </label>
+                  <button
+                    className="hover:bg-third border-third text-third absolute right-1 bottom-1 cursor-pointer rounded-sm border px-2 py-1 text-[0.625rem] hover:text-white @lg:text-xs"
+                    onClick={handleImgUrlUpload}
+                    type="button"
+                  >
+                    Upload
+                  </button>
+                </div>
               </div>
             )}
 
@@ -325,7 +428,7 @@ const PetCard = () => {
                     <select
                       name={field.name}
                       value={formData[field.name]}
-                      onChange={handleChange}
+                      onChange={handleInputValueChange}
                       className="pet-form-input w-full rounded border border-gray-300 p-2"
                       required={field.name === "gender"}
                     >
@@ -372,7 +475,7 @@ const PetCard = () => {
                             name="status"
                             value={option}
                             checked={formData.status === option}
-                            onChange={handleChange}
+                            onChange={handleInputValueChange}
                             className="hidden"
                           />
                           {option}
@@ -388,7 +491,7 @@ const PetCard = () => {
                       type={verifyInputType()}
                       name={field.name}
                       value={formData[field.name]}
-                      onChange={handleChange}
+                      onChange={handleInputValueChange}
                       min={
                         field.name === "ageInMonths"
                           ? 1
@@ -421,7 +524,7 @@ const PetCard = () => {
             type="text"
             name="notes"
             value={formData.notes}
-            onChange={handleChange}
+            onChange={handleInputValueChange}
             placeholder="Write some notes for your pet"
             className="pet-form-input bg-vintageGraphPaper h-25 w-full resize-none rounded p-2 text-2xl"
           />
@@ -431,7 +534,8 @@ const PetCard = () => {
         <div className="mt-6 flex justify-center gap-4 @max-2xl:flex-col">
           <button
             type="submit"
-            className={`${addStatus === "pending" ? "pointer-events-none" : "cursor-pointer"} hover:bg-blue-600" rounded-md bg-blue-500 px-4 py-2 text-white`}
+            disabled={selectedPet}
+            className={`${addStatus === "pending" && "pointer-events-none"} ${selectedPet ? "cursor-not-allowed bg-gray-300" : "cursor-pointer bg-blue-500 hover:bg-blue-600"} rounded-md px-4 py-2 text-white`}
           >
             {addStatus === "pending" ? (
               <FaSpinner className="mx-auto animate-spin text-white" />

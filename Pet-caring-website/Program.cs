@@ -78,6 +78,7 @@ namespace Pet_caring_website
             // Auth & JWT
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
             builder.Services.Configure<GoogleAuthSettings>(builder.Configuration.GetSection("Authentication:Google"));
+            builder.Services.Configure<GithubAuthSettings>(builder.Configuration.GetSection("Authentication:GitHub"));
             builder.Services.AddScoped<IJwtService, JwtService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
 
@@ -89,6 +90,7 @@ namespace Pet_caring_website
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddScoped<IUserContextService, UserContextService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IServiceService, ServiceService>();
 
             // Pet service
             builder.Services.AddScoped<IPetService, PetService>();
@@ -98,6 +100,7 @@ namespace Pet_caring_website
             var account = new Account(cloudinaryConfig.CloudName, cloudinaryConfig.ApiKey, cloudinaryConfig.ApiSecret);
             builder.Services.AddSingleton(new Cloudinary(account) { Api = { Secure = true } });
             builder.Services.AddScoped<IImageService, ImageService>();
+            builder.Services.AddScoped<ImageService>();
 
             // CORS
             var corsPolicy = "AllowFrontend";

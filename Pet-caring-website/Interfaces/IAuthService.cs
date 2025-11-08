@@ -11,5 +11,6 @@ namespace Pet_caring_website.Interfaces
         Task<AuthResponseDTO> ResetPasswordAsync(ResetPasswordRequestDTO request);
         Task<GoogleJsonWebSignature.Payload?> VerifyGoogleTokenAsync(string idToken);
         Task<AuthResponseDTO> LoginWithGoogleAsync(string email, string? firstName, string? lastName, string? picture);
+        Task<AuthResponseDTO> LoginWithGitHubAsync(string code, string? state);
     }
 }

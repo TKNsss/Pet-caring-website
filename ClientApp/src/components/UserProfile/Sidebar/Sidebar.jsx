@@ -12,14 +12,14 @@ const Sidebar = ({ section, setSection }) => {
   const selectedPetId = useSelector(selectCurrentPetId);
 
   return (
-    <div className="bg-profilePrimary sticky top-0 h-screen w-15 @5xl:w-64">
+    <div className="bg-profilePrimary sticky top-0 h-screen w-10 @md:w-15 @5xl:w-64">
       <div className="flex h-full flex-col justify-between pt-6 text-white">
         <div className="@5xl:pl-6">
           <div className="mb-10 flex flex-col gap-2 @5xl:pr-6">
             <img
               src={logoWhite}
               alt="logo"
-              className="mx-auto w-12 @5xl:w-20"
+              className="mx-auto w-8 @md:w-10 @5xl:w-18"
             />
             <h1 className="font-Poppins hidden text-center text-2xl font-semibold text-white @5xl:block">
               Happy Pet Care
@@ -36,10 +36,10 @@ const Sidebar = ({ section, setSection }) => {
               const activeClasses = isActive
                 ? "bg-profileSecondary activeRadius text-black"
                 : "";
-              const iconClasses = "scale-item text-2xl";
+              const iconClasses = "scale-item text-lg @md:text-xl";
               const labelClasses = "hidden scale-item @5xl:block";
 
-              // Handle special "Home" case
+              // Handle special "Home" case     
               if (id === "Home") {
                 return (
                   <li key={id}>

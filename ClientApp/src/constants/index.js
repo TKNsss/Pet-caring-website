@@ -55,23 +55,27 @@ import {
 } from "../assets";
 
 export const navLinks = [
-  { id: "Home", label: "Home", href: "/", icon: TiHome },
+  { id: "Home", label: "Home", labelKey: "nav.links.home", href: "/", icon: TiHome },
   {
     id: "Services",
     label: "Our Services",
+    labelKey: "nav.links.services.title",
     href: "/services",
     icon: FaHandHoldingHeart,
     subLinks: [
       {
         label: "Service 1",
+        labelKey: "nav.links.services.items.service1",
         href: "/services/service1",
       },
       {
         label: "Service 2",
+        labelKey: "nav.links.services.items.service2",
         href: "/services/service2",
       },
       {
         label: "Service 3",
+        labelKey: "nav.links.services.items.service3",
         href: "/services/service3",
       },
     ],
@@ -79,17 +83,19 @@ export const navLinks = [
   {
     id: "About",
     label: "About Us",
+    labelKey: "nav.links.about.title",
     href: "/about/why-choose-us",
     icon: MdGroup,
     subLinks: [
       {
         label: "Why HPC",
+        labelKey: "nav.links.about.why",
         href: "/about/why-choose-us",
       },
-      { label: "Gallery", href: "/about/gallery" },
+      { label: "Gallery", labelKey: "nav.links.about.gallery", href: "/about/gallery" },
     ],
   },
-  { id: "Contact", label: "Contact Us", href: "/contact", icon: FaPhoneAlt },
+  { id: "Contact", label: "Contact Us", labelKey: "nav.links.contact", href: "/contact", icon: FaPhoneAlt },
 ];
 
 export const userDropdownLinks = [
@@ -104,36 +110,48 @@ export const services = [
     description:
       "Choose from a 30, 45, or 60-minute visit to give your pet their daily dose of fun-filled exercise.",
     icon: icon_dogrunning,
+    titleKey: "home.services.items.dogWalking.title",
+    descriptionKey: "home.services.items.dogWalking.description",
   },
   {
     title: "Dog Running",
     description:
       "It is for big dogs that need more exercise. Choose from a 25, 35 minute to give your pet daily dose.",
-    icon: icon_dogrunning, // ô này mặc định màu tím
+    icon: icon_dogrunning,
+    titleKey: "home.services.items.dogRunning.title",
+    descriptionKey: "home.services.items.dogRunning.description",
   },
   {
     title: "Dog Boarding",
     description:
       "Give your dogs the best day ever with our caring service from grooming to walking and playing.",
     icon: icon_dogboarding,
+    titleKey: "home.services.items.dogBoarding.title",
+    descriptionKey: "home.services.items.dogBoarding.description",
   },
   {
     title: "Dog Overnight Care",
     description:
-      "If you’re away for the night, you definitely can let your dog stays with us for all the best cares.",
+      "If you're away for the night, you definitely can let your dog stays with us for all the best cares.",
     icon: icon_dogovernight,
+    titleKey: "home.services.items.dogOvernight.title",
+    descriptionKey: "home.services.items.dogOvernight.description",
   },
   {
     title: "Pet in-home visit",
     description:
-      "Service for cats and dogs. While you’re away we provide your pet all food, water, exercise, and attention.",
+      "Service for cats and dogs. While you're away we provide your pet all food, water, exercise, and attention.",
     icon: icon_doginhome,
+    titleKey: "home.services.items.petInHome.title",
+    descriptionKey: "home.services.items.petInHome.description",
   },
   {
     title: "Pet Taxi",
     description:
-      "Service for cats and dogs. Does your pet need a lift to the groomers, vet, or dog park? We’ve got their tails covered.",
+      "Service for cats and dogs. Does your pet need a lift to the groomers, vet, or dog park? We've got their tails covered.",
     icon: icon_dogtaxi,
+    titleKey: "home.services.items.petTaxi.title",
+    descriptionKey: "home.services.items.petTaxi.description",
   },
 ];
 
@@ -142,16 +160,19 @@ export const statsData = [
     id: 1,
     number: "+12",
     description: "Years of experiences",
+    descriptionKey: "home.achievements.items.experience",
   },
   {
     id: 2,
     number: "20K+",
     description: "Happy pets, Happy clients",
+    descriptionKey: "home.achievements.items.happyClients",
   },
   {
     id: 3,
     number: "55+",
     description: "Professionals",
+    descriptionKey: "home.achievements.items.professionals",
   },
 ];
 
@@ -164,6 +185,7 @@ export const reviews = [
     rating: 5,
     review:
       "So happy I found this place! They are all absolutely wonderful and genuinely care about your pets. Also prices are very reasonable for all the work they do (like watering plants). Can't thank you all enough!",
+    reviewKey: "home.reviews.items.khal",
   },
   {
     id: 2,
@@ -173,6 +195,7 @@ export const reviews = [
     rating: 4.5,
     review:
       "Happy Pet Care is the absolute BEST and the only people I trust with my precious cat! I have been using Happy Pet Care for over a year and a half and I can not recommend them highly enough.",
+    reviewKey: "home.reviews.items.thomas",
   },
   {
     id: 3,
@@ -182,6 +205,7 @@ export const reviews = [
     rating: 5,
     review:
       "My dog loves walking with their friendly staff.The owner Mary is very responsive and reliable, overall I have a good experience with their service.",
+    reviewKey: "home.reviews.items.elizabeth",
   },
   {
     id: 4,
@@ -191,6 +215,7 @@ export const reviews = [
     rating: 4.8,
     review:
       "Happy Pet Care is the absolute BEST and the only people I trust with my precious cat! I have been using Happy Pet Care for over a year and a half and I can not recommend them highly enough.",
+    reviewKey: "home.reviews.items.michael1",
   },
   {
     id: 5,
@@ -200,6 +225,7 @@ export const reviews = [
     rating: 4.8,
     review:
       "Happy Pet Care is the absolute BEST and the only people I trust with my precious cat! I have been using Happy Pet Care for over a year and a half and I can not recommend them highly enough.",
+    reviewKey: "home.reviews.items.michael2",
   },
   {
     id: 6,
@@ -209,17 +235,18 @@ export const reviews = [
     rating: 4.8,
     review:
       "Happy Pet Care is the absolute BEST and the only people I trust with my precious cat! I have been using Happy Pet Care for over a year and a half and I can not recommend them highly enough.",
+    reviewKey: "home.reviews.items.michael3",
   },
 ];
 
 export const categories = [
-  { key: "all", label: "All" },
-  { key: "dog-walking", label: "Dog Walking" },
-  { key: "dog-running", label: "Dog Running" },
-  { key: "dog-day-care", label: "Dog Day Care" },
-  { key: "dog-overnight-care", label: "Dog Overnight Care" },
-  { key: "pet-in-home", label: "Pet In-home Visit" },
-  { key: "pet-taxi", label: "Pet Taxi" },
+  { key: "all", label: "All", labelKey: "gallery.categories.all" },
+  { key: "dog-walking", label: "Dog Walking", labelKey: "gallery.categories.dogWalking" },
+  { key: "dog-running", label: "Dog Running", labelKey: "gallery.categories.dogRunning" },
+  { key: "dog-day-care", label: "Dog Day Care", labelKey: "gallery.categories.dogDayCare" },
+  { key: "dog-overnight-care", label: "Dog Overnight Care", labelKey: "gallery.categories.dogOvernight" },
+  { key: "pet-in-home", label: "Pet In-home Visit", labelKey: "gallery.categories.petInHome" },
+  { key: "pet-taxi", label: "Pet Taxi", labelKey: "gallery.categories.petTaxi" },
 ];
 
 export const images = [
