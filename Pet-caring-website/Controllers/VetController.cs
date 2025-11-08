@@ -8,9 +8,9 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Pet_caring_website.Data;
-using Pet_caring_website.DTOs.User.PetProfile;
-using Pet_caring_website.DTOs.User.UserProfile;
-using Pet_caring_website.DTOs.User.Appointment;
+// using Pet_caring_website.DTOs.User.PetProfile;
+// using Pet_caring_website.DTOs.User.UserProfile;
+// using Pet_caring_website.DTOs.User.Appointment;
 using Pet_caring_website.Services;
 using Pet_caring_website.Models;
 

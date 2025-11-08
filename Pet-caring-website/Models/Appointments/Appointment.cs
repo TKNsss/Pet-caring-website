@@ -31,8 +31,8 @@ public partial class Appointment
     [Column("notes")]
     public string? Notes { get; set; }
 
-    [Column("vet_id")]
-    public Guid? VetId { get; set; }
+    // [Column("vet_id")]
+    // public Guid? VetId { get; set; }
 
     [Column("update_at", TypeName = "timestamp without time zone")]
     public DateTime UpdateAt { get; set; }
