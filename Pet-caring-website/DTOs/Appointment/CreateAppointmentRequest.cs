@@ -4,7 +4,7 @@ namespace Pet_caring_website.DTOs.Appointment;
 public class CreateAppointmentRequest
 {
     [Required]
-    public DateTime ApDate { get; set; } // Ngày hẹn
+    public DateOnly ApDate { get; set; } // Ngày hẹn
 
     public string? Notes { get; set; } // Ghi chú
 

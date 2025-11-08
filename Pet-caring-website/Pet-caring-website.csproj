@@ -10,14 +10,15 @@
   <ItemGroup>
     <Folder Include="ClientApp\" />
     <Folder Include="wwwroot\" />
-    <Folder Include="wwwroot\" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="DTOs\Pet\CreatePet.cs" />
+    <None Include="DTOs\Pet\PetResponseDTO.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="CloudinaryDotNet" Version="1.27.5" />
     <PackageReference Include="Google.Apis.Auth" Version="1.69.0" />
@@ -37,6 +38,7 @@
 
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.7.0" />
     <PackageReference Include="MimeKit" Version="4.11.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.3" />

@@ -1,0 +1,31 @@
+                        {service?.serviceImgUrl ? (
+                          <img
+                            src={service?.serviceImgUrl} // Replace with real image
+                            alt="service_img"
+                            className="max-h-45 object-contain shadow-lg sm:h-45 sm:max-h-none sm:w-full"
+                            title={`${service?.serviceName || "Service Image"}`}
+                          />
+                        ) : (
+                          <img
+                            src={fileUploadImg}
+                            alt="no-data"
+                            className="h-full max-h-45 w-full object-contain sm:max-h-none"
+                            title="No image available"
+                          />
+                        )}
+                      </div>
+
+                      {/* Service Details */}
+                      <div className="w-full p-4 sm:w-2/3">
+                        {/* Title + Rating */}
+                        <div className="mb-2 flex flex-col justify-between gap-4 sm:flex-row">
+                          <div className="font-Inter">
+                            <h2
+                              className="font-Inter cursor-default text-base font-semibold text-black sm:max-w-42 sm:truncate sm:text-lg"
+                              title={service?.serviceName || "Service Title"}
+                            >
+                              {service?.serviceName || "Service Title"}
+                            </h2>
+                            <a
+                              href="#"
+                              className="text-third hover:text-primary flex items-center gap-1 text-sm underline"

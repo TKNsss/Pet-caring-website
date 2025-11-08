@@ -4,13 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Pet_caring_website.Data;
 using Pet_caring_website.DTOs.Appointment;
-using Pet_caring_website.Models;
+using Pet_caring_website.Interfaces;
+using Pet_caring_website.Models.Appointments;
 using Pet_caring_website.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace Pet_caring_website.Controllers
 {
@@ -19,18 +18,19 @@ namespace Pet_caring_website.Controllers
     public class AppointmentsController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
 
-        public AppointmentsController(AppDbContext context, EmailService emailService, IConfiguration configuration)
+        public AppointmentsController(AppDbContext context, IEmailService emailService, IConfiguration configuration)
         {
             _context = context;
             _emailService = emailService;
             _configuration = configuration;
         }
-        // POST api/<AppointmentsController>
+
+        // POST
         // Tạo lịch hẹn
-        [HttpPost("create-appointment")]
+        [HttpPost()]
         [Authorize]
         public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentRequest request)
         {
@@ -43,10 +43,10 @@ namespace Pet_caring_website.Controllers
                 });
             }
 
-            if (request.ApDate < DateTime.Now)
-            {
-                return BadRequest(new { message = "Thời gian hẹn không được nhỏ hơn thời gian hiện tại!" });
-            }
+            //if (request.ApDate < DateOnly.Now)
+            //{
+            //    return BadRequest(new { message = "Thời gian hẹn không được nhỏ hơn thời gian hiện tại!" });
+            //}
 
             if (!TryGetUserId(out Guid userId))
             {
@@ -54,16 +54,16 @@ namespace Pet_caring_website.Controllers
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
                 // Tạo buổi hẹn
                 var appointment = new Appointment
                 {
                     UserId = userId,
-                    ApDate = request.ApDate.ToLocalTime(),
+                    //ApDate = request.ApDate.ToLocalTime(),
                     Status = "Pending",
                     Notes = request.Notes,
-                    CreateAt = DateTime.Now
                 };
 
                 _context.Appointments.Add(appointment);
@@ -147,6 +147,7 @@ namespace Pet_caring_website.Controllers
                 return StatusCode(500, new { message = "Có lỗi xảy ra khi tạo lịch hẹn!", error = ex.Message });
             }
         }
+
         // Chưa có tự động hủy lịch hẹn khi quá hạn (tạo thêm)
         [HttpGet("confirm-appointment")]
         public async Task<IActionResult> ConfirmAppointmentByToken([FromQuery] string token)

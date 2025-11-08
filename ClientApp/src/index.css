@@ -1,0 +1,176 @@
+@import "tailwindcss";
+
+@theme {
+  /* fonts */
+  --font-Inter: "Inter", serif;
+  --font-Poppins: "Poppins", serif;
+  --font-chewy: "Chewy", serif;
+  --font-Lato: "Lato", serif;
+  --font-Monserrat: "Montserrat", sans-serif;
+  --font-OoohBaby: "Oooh Baby", cursive;
+
+  /* colors */
+  --color-primary: #5a3bb3;
+  --color-secondary: #e4813a;
+  --color-third: #7759cc;
+  --color-fourth: #7030c3;
+  --color-hoverPurple: #8954cc;
+  --color-txt-1: #3e3218;
+  --color-txt-2: #33363f;
+  --color-darkYellow: #f7ce72;
+  --color-mdYellow: #fbe2ac;
+  --color-bgYellow: #ffe99a;
+  --color-lightYellow: #fdf3dc;
+  --color-lavender: #ebe8fc;
+  --color-navBorder: #afb1b6;
+  --color-navBg: #f6f4f4;
+  --color-navSubBg: #8459cc;
+  --color-disable: #d3d3d3;
+  /* profile */
+  --color-profilePrimary: #5752ae;
+  --color-profileSecondary: #dfeafc;
+  --color-profileThird: #5f58b7;
+
+  --color-ink: #0000ff;
+  --color-pet: #f5efff;
+
+  /* palettes */
+  --color-pl-1: #091057;
+  --color-pl-2: #024CAA;
+  --color-pl-3: #EC8305;
+  --color-pl-4: #5B99C2;
+  --color-pl-5: #C62E2E;
+}
+
+@layer base {
+  html {
+    overflow-y: scroll;
+    font-family: var(--font-Inter), sans-serif;
+    line-height: 1.6;
+    /* Better readability */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
+  h1,
+  h2 {
+    @apply font-chewy text-third font-thin;
+  }
+
+  h3 {
+    @apply font-Poppins;
+  }
+
+  a {
+    @apply font-medium;
+  }
+  
+  a, nav button, input[type="search"] {
+    font-size: clamp(0.875rem, 0.5rem + 0.5vw, 1rem); /* 14px → 16px */
+  }
+
+  .sub-link {
+    font-size: clamp(0.75rem, 0.5rem + 0.3vw, 0.875rem);
+  } 
+
+
+  nav h2 {
+    font-size: clamp(1.25rem, 1rem + 1vw, 1.5rem); /* 20px → 24px */
+  }
+}
+
+@layer components {
+  .web-container {
+    @apply mx-auto w-full;
+
+    @apply [@media(width>=40rem)]:max-w-full; /* 640px */
+    @apply [@media(width>=48rem)]:max-w-[60.25rem]; /* 768px */
+    @apply [@media(width>=64rem)]:max-w-[64rem]; /* 1024px */
+    @apply [@media(width>=80rem)]:max-w-[80rem]; /* 1280px */
+    @apply [@media(width>=96rem)]:max-w-[96rem]; /* 1536px */
+  }
+
+  .search-bar {
+    @apply focus:border-primary w-0 rounded-full py-1 pr-3 pl-7 transition-all duration-300 max-md:group-hover:w-full max-md:group-hover:border max-md:focus:w-full focus:ring-2 focus:ring-primary md:w-full md:border lg:w-[300px];
+  }
+
+  .log-input {
+    @apply focus:ring-third mt-2 w-full rounded-lg border p-2 focus:ring-2 focus:outline-none text-base;
+  }
+
+  .activeRadius::before {
+    content: "";
+    position: absolute;
+    width: 35px;
+    height: 38px;
+    right: -3px;
+    bottom: -37px;
+    border-top-right-radius: 1000px;
+    box-shadow: 0 -19px 0 0 var(--color-profileSecondary);
+    background-color: transparent;
+  }
+
+  .activeRadius::after {
+    content: "";
+    position: absolute;
+    width: 35px;
+    height: 38px;
+    right: -3px;
+    top: -37px;
+    border-bottom-right-radius: 1000px;
+    box-shadow: 0 19px 0 0 var(--color-profileSecondary);
+    background-color: transparent;
+    z-index: -1;
+  }
+
+  @media (max-width: 448px) {
+    .activeRadius::before {
+      right: -4px;
+      bottom: -25.5px;
+    }
+
+    .activeRadius::after {
+      right: -5px;
+      top: -28px;
+      rotate: -2deg;
+    }
+  }
+
+  .scale-item {
+    @apply transform cursor-pointer transition-transform duration-300 hover:scale-110;
+  }
+
+  .pet-form-label {
+    @apply text-xs font-semibold tracking-widest uppercase @sm:text-sm;
+  }
+
+  .pet-form-input {
+    @apply font-OoohBaby font-semibold text-ink border-none text-2xl outline-none;
+  }
+
+  .shadow-custom-1 {
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  }
+
+  .shadow-custom-2 {
+    box-shadow:
+      rgba(0, 0, 0, 0.24) 3px 3px 6px 0px inset,
+      rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset;
+  }
+
+  .bg-vintageGraphPaper {
+    background-image: url("./assets/graph-paper.jpg");
+    background-repeat: repeat;
+  }
+
+  .custom-radio-btn .checkmark {
+    @apply hidden
+  }
+
+  .custom-radio-btn input:checked + .checkmark {
+    @apply inline-block
+  }
+}
