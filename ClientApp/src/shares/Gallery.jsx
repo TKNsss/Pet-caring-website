@@ -1,6 +1,7 @@
-import React, { useState } from "react";
 import { home_gallery1, home_gallery2, home_gallery3 } from "../assets";
 import { useTranslation } from "react-i18next";
+import React, { useState } from "react";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
 
 const Gallery = ({ bgColor }) => {
   const images = [home_gallery1, home_gallery2, home_gallery3];
@@ -55,7 +56,7 @@ const Gallery = ({ bgColor }) => {
             <h3
               className="text-center text-3xl font-bold text-gray-900"
               dangerouslySetInnerHTML={{
-                __html: t("home.gallery.headingDesktop"),
+                __html: sanitizeHtml(t("home.gallery.headingDesktop")),
               }}
             />
 
@@ -96,7 +97,7 @@ const Gallery = ({ bgColor }) => {
             <h3
               className="text-center text-2xl font-bold text-gray-900 sm:text-3xl"
               dangerouslySetInnerHTML={{
-                __html: t("home.gallery.headingMobile"),
+                __html: sanitizeHtml(t("home.gallery.headingMobile")),
               }}
             />
 

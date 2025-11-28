@@ -1,6 +1,7 @@
+import { useTranslation } from "react-i18next";
 import React, { useState, useEffect } from "react";
 import { categories, images } from "../../../constants";
-import { useTranslation } from "react-i18next";
+import { sanitizeHtml } from "../../../utils/sanitizeHtml";
 
 const PetService = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -36,7 +37,9 @@ const PetService = () => {
       <div className="mt-[86px] mb-8 px-[2.25rem]">
         <h3
           className="mb-11 text-3xl font-bold text-black"
-          dangerouslySetInnerHTML={{ __html: t("gallery.page.heading") }}
+          dangerouslySetInnerHTML={{
+            __html: sanitizeHtml(t("gallery.page.heading")),
+          }}
         />
 
         <div className="mb-11 flex space-x-4 overflow-x-auto whitespace-nowrap xl:justify-between">

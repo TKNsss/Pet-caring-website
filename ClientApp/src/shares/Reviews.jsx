@@ -1,7 +1,8 @@
-import React, { useState } from "react";
 import { yelp } from "../assets";
 import { reviews } from "../constants";
 import { useTranslation } from "react-i18next";
+import React, { useState } from "react";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
 
 const Reviews = ({ bgColor }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -16,7 +17,7 @@ const Reviews = ({ bgColor }) => {
               <h3
                 className="ml-10 text-left text-[30px] font-bold"
                 dangerouslySetInnerHTML={{
-                  __html: t("home.reviews.desktopHeading"),
+                  __html: sanitizeHtml(t("home.reviews.desktopHeading")),
                 }}
               />
               <img src={yelp} className="h-[61px] w-[152px]" alt="Yelp" />

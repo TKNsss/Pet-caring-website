@@ -54,6 +54,24 @@ const PetCard = () => {
   const [showModal, setShowModal] = useState(false);
   const [petImg, setPetImg] = useState(selectedPet?.avatarUrl || null);
   const [isDragging, setIsDragging] = useState(false);
+  const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB, matches backend validator
+  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/jpg"];
+
+  const validateImageFile = (file) => {
+    if (!file) return false;
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.warning("Only JPEG and PNG images are allowed.");
+      return false;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      toast.warning("Image must be 2MB or smaller.");
+      return false;
+    }
+
+    return true;
+  };
 
   useEffect(() => {
     if (fetchSpecieStatus === "idle") dispatch(fetchSpecies());
@@ -172,8 +190,9 @@ const PetCard = () => {
   };
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setPetImg(e.target.files[0]);
+    const file = e.target.files?.[0];
+    if (file && validateImageFile(file)) {
+      setPetImg(file);
     }
   };
 
@@ -186,10 +205,11 @@ const PetCard = () => {
       // regular expression '.test()' method
       const isImage = /\.(jpeg|jpg|png)$/i.test(petImgUrl);
 
-      if (!petImgUrl.startsWith("https") || isImage) {
+      if (!petImgUrl.startsWith("https") || !isImage) {
         toast.warning(
           "Please enter a valid image URL (only accepts jpeg|jpg|png).",
         );
+        return;
       }
       setPetImg(petImgUrl);
     } catch (err) {
@@ -210,9 +230,11 @@ const PetCard = () => {
       return;
     }
 
+    if (!validateImageFile(file)) return;
+
     const formData = new FormData();
     formData.append("img", file);
-    formData.append("petId", selectedPet.petId);
+    formData.append("petId", selectedPetId);
 
     try {
       await dispatch(uploadPetImage(formData)).unwrap();
@@ -226,7 +248,7 @@ const PetCard = () => {
       setFormData(getInitialFormData(null));
       if (petImg) setPetImg(null);
       if (selectedPetId) dispatch(clearSelectedPet());
-    } else if ((resetType = "initialPetData")) {
+    } else if (resetType === "initialPetData") {
       setFormData(getInitialFormData(selectedPet));
     }
 
@@ -293,7 +315,7 @@ const PetCard = () => {
                     setIsDragging(false);
                     // drag and drop work with dataTransfer
                     const file = e.dataTransfer.files?.[0];
-                    if (file) setPetImg(file);
+                    if (file && validateImageFile(file)) setPetImg(file);
                   }}
                 >
                   <label

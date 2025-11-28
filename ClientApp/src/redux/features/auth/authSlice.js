@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, isAnyOf } from "@reduxjs/toolkit";
 import handleApiRequest from "../../../utils/apiHandler";
 import { toast } from "react-toastify";
 import { jwtDecode } from "jwt-decode";
@@ -37,7 +37,9 @@ export const loginWithGoogle = createAsyncThunk(
         thunkAPI,
       );
     } catch (err) {
-      return thunkAPI.rejectWithValue(err);
+      return thunkAPI.rejectWithValue({
+        message: err?.message || "Google authentication failed",
+      });
     }
   },
 );
@@ -87,6 +89,24 @@ export const resetPassword = createAsyncThunk(
     ),
 );
 
+const authPendingMatcher = isAnyOf(
+  login.pending,
+  loginWithGoogle.pending,
+  loginWithGitHub.pending,
+  register.pending,
+  forgotPassword.pending,
+  resetPassword.pending,
+);
+
+const authRejectedMatcher = isAnyOf(
+  login.rejected,
+  loginWithGoogle.rejected,
+  loginWithGitHub.rejected,
+  register.rejected,
+  forgotPassword.rejected,
+  resetPassword.rejected,
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -133,20 +153,14 @@ const authSlice = createSlice({
         state.status = "succeeded";
       })
       // generic matchers for loading & error states
-      .addMatcher(
-        (action) => action.type.endsWith("/pending"),
-        (state) => {
-          state.status = "loading";
-          state.error = null;
-        },
-      )
-      .addMatcher(
-        (action) => action.type.endsWith("/rejected"),
-        (state, action) => {
-          state.status = "failed";
-          state.error = action.payload;
-        },
-      );
+      .addMatcher(authPendingMatcher, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addMatcher(authRejectedMatcher, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload ?? action.error;
+      });
   },
 });
 

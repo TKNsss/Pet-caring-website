@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import Dogwalk from "../../../assets/puppyboard.jpg";
-import Singlewalk from "../../../assets/singleBoard.webp";
-import Groupwalk from "../../../assets/groupboard.jpg";
+import Singlewalk from "../../../assets/singleboard.webp";
+import Groupwalk from "../../../assets/groupBoard.jpg";
 import { FaMoneyBill } from "react-icons/fa";
 
 const Dogboarding_op = () => {
@@ -13,13 +13,13 @@ const Dogboarding_op = () => {
 
   return (
     <div className="mx-auto px-10 py-8 lg:px-20">
-      {/* Tiêu đề */}
+      {/* TiÃªu Ä‘á» */}
       <h3 className="mb-14 text-4xl font-bold">
         Dog Boarding
         <span className="text-[#7759CC]"> Options</span>
       </h3>
 
-      {/* Tab chọn loại dịch vụ */}
+      {/* Tab chá»n loáº¡i dá»‹ch vá»¥ */}
       <div className="mb-10 grid grid-cols-3 gap-8">
         <button
           className={`font-Monserrat rounded-lg py-5 font-bold shadow-md sm:text-[27px] lg:text-[23px] ${
@@ -53,12 +53,12 @@ const Dogboarding_op = () => {
         </button>
       </div>
 
-      {/* Nội dung hiển thị tương ứng từng tab */}
+      {/* Ná»™i dung hiá»ƒn thá»‹ tÆ°Æ¡ng á»©ng tá»«ng tab */}
       <div className="mt-6">
         {/* Puppy Walks */}
         {activeTab === "puppy" && (
           <div className="flex w-full flex-col items-start lg:flex-row lg:items-stretch">
-            {/* Thay thế /puppy.jpg bằng ảnh thực tế của bạn */}
+            {/* Thay tháº¿ /puppy.jpg báº±ng áº£nh thá»±c táº¿ cá»§a báº¡n */}
             <div className="w-full flex-1 px-6 lg:relative lg:w-1/2">
               <img
                 src={Dogwalk}
@@ -87,7 +87,7 @@ const Dogboarding_op = () => {
                 </h3>
               </div>
               <button className="font-chewy w-full rounded-2xl bg-[#7759CC] px-4 py-2 text-white hover:bg-purple-600 sm:text-[35px] lg:rounded-full lg:text-[25px]">
-                Schedule a walk →
+                Schedule a walk â†’
               </button>
             </div>
           </div>
@@ -96,7 +96,7 @@ const Dogboarding_op = () => {
         {/* Single Walk */}
         {activeTab === "single" && (
           <div className="flex w-full flex-col items-start lg:flex-row lg:items-stretch">
-            {/* Thay thế /puppy.jpg bằng ảnh thực tế của bạn */}
+            {/* Thay tháº¿ /puppy.jpg báº±ng áº£nh thá»±c táº¿ cá»§a báº¡n */}
             <div className="w-full flex-1 px-6 lg:relative lg:w-1/2">
               <img
                 src={Singlewalk}
@@ -125,7 +125,7 @@ const Dogboarding_op = () => {
                 </h3>
               </div>
               <button className="font-chewy w-full rounded-2xl bg-[#7759CC] px-4 py-2 text-white hover:bg-purple-600 sm:text-[35px] lg:rounded-full lg:text-[25px]">
-                Schedule a walk →
+                Schedule a walk â†’
               </button>
             </div>
           </div>
@@ -134,7 +134,7 @@ const Dogboarding_op = () => {
         {/* Group Walks */}
         {activeTab === "group" && (
           <div className="flex w-full flex-col items-start lg:flex-row lg:items-stretch">
-            {/* Thay thế /puppy.jpg bằng ảnh thực tế của bạn */}
+            {/* Thay tháº¿ /puppy.jpg báº±ng áº£nh thá»±c táº¿ cá»§a báº¡n */}
             <div className="w-full flex-1 px-6 lg:relative lg:w-1/2">
               <img
                 src={Groupwalk}
@@ -163,7 +163,7 @@ const Dogboarding_op = () => {
                 </h3>
               </div>
               <button className="font-chewy w-full rounded-2xl bg-[#7759CC] px-4 py-2 text-white hover:bg-purple-600 sm:text-[35px] lg:rounded-full lg:text-[25px]">
-                Schedule a walk →
+                Schedule a walk â†’
               </button>
             </div>
           </div>

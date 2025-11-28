@@ -8,13 +8,14 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postbuild": "rm -rf ../ClientApp/dist && mv dist ../ClientApp/"
+    "postbuild": "echo skipping postbuild"
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
     "@reduxjs/toolkit": "^2.6.1",
     "@tailwindcss/vite": "^4.0.6",
     "axios": "^1.8.3",
+    "dompurify": "^3.3.0",
     "framer-motion": "^12.4.7",
     "i18next": "^25.6.1",
     "jwt-decode": "^4.0.0",

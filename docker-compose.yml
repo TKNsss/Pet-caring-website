@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pcwuser
+      POSTGRES_PASSWORD: pcwpass
+      POSTGRES_DB: pcwdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=pcwdb;Username=pcwuser;Password=${POSTGRES_PASSWORD}
+      Jwt__SecretKey: ${JWT_SECRET}
+      Jwt__Issuer: "http://localhost:8080"
+      Jwt__Audience: "http://localhost:5173" # use your real frontend origin in prod
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET}
+      Authentication__GitHub__ClientId: ${GITHUB_CLIENT_ID}
+      Authentication__GitHub__ClientSecret: ${GITHUB_CLIENT_SECRET}
+      Authentication__GitHub__RedirectUri: "http://localhost:5173/auth/github/callback"
+      Cloudinary__CloudName: ${CLOUDINARY_CLOUD_NAME}
+      Cloudinary__ApiKey: ${CLOUDINARY_API_KEY}
+      Cloudinary__ApiSecret: ${CLOUDINARY_API_SECRET}
+      SuperAdmins__0: "admin@demo.vn"
+
+      Email__SmtpServer: "smtp.gmail.com"
+      Email__SmtpPort: "587"
+      Email__SmtpUser: "minhhai8409@gmail.com"
+      Email__SmtpPassword: "jfzw yqnl unuy hhru"
+      Email__EnableSsl: "true"
+    ports:
+      - "8080:8080"
+    # If you want to persist logs or mount appsettings, uncomment volumes below
+    # volumes:
+    #   - ./appsettings.Production.json:/app/appsettings.Production.json:ro
+
+  frontend:
+    build:
+      context: ./ClientApp
+      dockerfile: Dockerfile
+      args:
+        # Override at build time: docker compose build --build-arg VITE_API_BASE_URL=https://api.example.com frontend
+        VITE_API_BASE_URL: "http://localhost:8080/api/v1"
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

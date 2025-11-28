@@ -23,7 +23,16 @@ const handleApiRequest = async (
     
     return thunkAPI.rejectWithValue(response.data);
   } catch (err) {
-    return thunkAPI.rejectWithValue(err);
+    const serializedError =
+      err?.response?.data ??
+      (typeof err?.message === "string"
+        ? {
+            message: err.message,
+            ...(err.code && { code: err.code }),
+          }
+        : { message: "Network Error" });
+
+    return thunkAPI.rejectWithValue(serializedError);
   }
 };
 

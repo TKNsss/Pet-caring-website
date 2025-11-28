@@ -1,6 +1,7 @@
+import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
 import { statsData } from "../../../constants";
-import { useTranslation } from "react-i18next";
+import { sanitizeHtml } from "../../../utils/sanitizeHtml";
 
 const Achievement = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,10 +57,12 @@ const Achievement = () => {
         </svg>
 
         <div className="px-[2.25rem] py-16 sm:px-6 lg:px-8">
-          <h3
-            className="mb-8 text-center text-[30px] font-bold text-[#33363F] md:text-3xl"
-            dangerouslySetInnerHTML={{ __html: t("home.achievements.heading") }}
-          />
+        <h3
+          className="mb-8 text-center text-[30px] font-bold text-[#33363F] md:text-3xl"
+          dangerouslySetInnerHTML={{
+            __html: sanitizeHtml(t("home.achievements.heading")),
+          }}
+        />
 
           {/* màn lớn */}
           <div className="hidden grid-cols-3 gap-8 text-center sm:grid">

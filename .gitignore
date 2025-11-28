@@ -10,8 +10,9 @@ obj/
 # appsettings
 appsettings.Development.json
 
-# dotenv files
+# dotenv files (keep local only; never commit secrets)
 .env
+.env.*
 
 # User-specific files
 *.rsuser

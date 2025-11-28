@@ -38,6 +38,10 @@ const formatApiError = (err) => {
     return data.detail;
   }
 
+  if (data?.message) {
+    return data.message;
+  }
+
   if (data?.error) {
     return data.error;
   }

@@ -1,6 +1,7 @@
-﻿using CloudinaryDotNet; // gives access to Cloudinary, Account, FileDescription, etc
+using System.Net;
+using CloudinaryDotNet; // gives access to Cloudinary, Account, FileDescription, etc
 using CloudinaryDotNet.Actions; // includes action result types like ImageUploadResult
-using Pet_caring_website.Interfaces; 
+using Pet_caring_website.Interfaces;
 // This service handles uploading images to Cloudinary using files that come in through
 // a web form (usually via multipart/form-data).
 
@@ -91,16 +92,22 @@ namespace Pet_caring_website.Services
                         .Crop("fill") // Crops the image to fit the exact dimensions while keeping subject in focus
                         .Gravity("face") // Focuses crop on face if detected
                         .FetchFormat("auto") // Converts to most efficient format automatically
-                        .Quality("auto:eco") // Compresses to "eco" level — smaller file size with reasonable quality
+                        .Quality("auto:eco") // Compresses to "eco" level - smaller file size with reasonable quality
                 };
 
                 _logger.LogInformation("[ImageService] Uploading image to Cloudinary | PublicId={PublicId}, Folder={Folder}", publicId, folder);
 
-                var result =  await _cloudinary.UploadAsync(uploadParams);
+                var result = await _cloudinary.UploadAsync(uploadParams);
 
-                if (result.StatusCode != System.Net.HttpStatusCode.OK)
+                var statusNotOk = result.StatusCode != HttpStatusCode.OK;
+                var hasError = result.Error != null;
+                var missingUrl = result.SecureUrl == null;
+
+                if (statusNotOk || hasError || missingUrl)
                 {
-                    _logger.LogWarning("[ImageService] Upload failed | Status={Status}, Error={Error}", result.StatusCode, result.Error?.Message);
+                    var errorMessage = result.Error?.Message ?? $"Upload failed with status {result.StatusCode}";
+                    _logger.LogWarning("[ImageService] Upload failed | Status={Status}, MissingUrl={MissingUrl}, Error={Error}", result.StatusCode, missingUrl, result.Error?.Message);
+                    throw new InvalidOperationException(errorMessage);
                 }
 
                 return result;
@@ -151,9 +158,9 @@ namespace Pet_caring_website.Services
                 throw new InvalidOperationException("No image file provided.");
 
             if (file.Length > 2 * 1024 * 1024)
-                throw new InvalidOperationException("Max allowed size of image is 2 MB");          
+                throw new InvalidOperationException("Max allowed size of image is 2 MB");
 
-            var validTypes = new[] { "image/jpeg", "image/png", "image/jpg"};
+            var validTypes = new[] { "image/jpeg", "image/png", "image/jpg" };
 
             if (!validTypes.Contains(file.ContentType))
                 throw new InvalidOperationException("Unsupported image type. Only JPEG, PNG, and JPG are allowed.");

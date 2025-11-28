@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using Pet_caring_website.Configurations;
 using Pet_caring_website.Interfaces;
+using System;
 using System.Net;
 using System.Net.Mail;
 
@@ -62,13 +63,19 @@ namespace Pet_caring_website.Services
 
         private async Task SendEmailInternalAsync(string toEmail, string subject, string body)
         {
-            if (string.IsNullOrEmpty(_emailSettings.SmtpUser) || string.IsNullOrEmpty(_emailSettings.SmtpPassword))
+            var smtpUser = _emailSettings.SmtpUser?.Trim();
+            var smtpPassword = _emailSettings.SmtpPassword?
+                .Replace(" ", string.Empty, StringComparison.Ordinal)
+                .Replace("\t", string.Empty, StringComparison.Ordinal)
+                .Trim();
+
+            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
                 throw new InvalidOperationException("SMTP credentials are not configured.");
 
             _logger.LogInformation(
                "[EmailService] Sending email | To: {To} | Subject: {Subject} | SMTP: {Smtp}:{Port} (SSL={SSL})",
                toEmail,
-               subject,
+                subject,
                _emailSettings.SmtpServer,
                _emailSettings.SmtpPort,
                _emailSettings.EnableSsl
@@ -79,14 +86,15 @@ namespace Pet_caring_website.Services
                 using var smtpClient = new SmtpClient(_emailSettings.SmtpServer)
                 {
                     Port = _emailSettings.SmtpPort,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
                     EnableSsl = _emailSettings.EnableSsl,
                     UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(_emailSettings.SmtpUser, _emailSettings.SmtpPassword)
+                    Credentials = new NetworkCredential(smtpUser, smtpPassword)
                 };
 
                 using var mailMessage = new MailMessage
                 {
-                    From = new MailAddress(_emailSettings.SmtpUser),
+                    From = new MailAddress(smtpUser),
                     Subject = subject,
                     Body = body,
                     IsBodyHtml = true
@@ -99,13 +107,20 @@ namespace Pet_caring_website.Services
             }
             catch (SmtpException ex)
             {
-                _logger.LogError(ex, "[Email Service] SMTP error when sending email to {ToEmail}", toEmail);
-                throw new InvalidOperationException("Failed to send email due to SMTP error.");
+                _logger.LogError(
+                    ex,
+                    "[Email Service] SMTP error when sending email to {ToEmail}. StatusCode={StatusCode}, Response={Response}",
+                    toEmail,
+                    ex.StatusCode,
+                    ex.Message);
+                throw new InvalidOperationException(
+                    $"Failed to send email via SMTP ({ex.StatusCode}). {ex.Message}",
+                    ex);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Email Service] Unexpected error when sending email to {ToEmail}", toEmail);
-                throw new InvalidOperationException("Failed to send email due to an unexpected error.");
+                throw new InvalidOperationException("Failed to send email due to an unexpected error.", ex);
             }
         }
     }

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Modal from "react-modal";
 
 // Required: Bind modal to your root app element
@@ -20,19 +20,27 @@ import OsDogOn from "./components/Os_dogOn/OsDogOn";
 import RequestServices from "./components/RequestServices/RequestServices";
 import { ToastContainer, Flip } from "react-toastify";
 import UserProfile from "./components/UserProfile/UserProfile";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { fetchUserProfile } from "./redux/features/users/usersSlice";
 
 const App = () => {
   const dispatch = useDispatch();
+  const token = useSelector((state) => state.auth.token);
+  const hasFetchedProfile = useRef(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    // On refresh, Redux state is reset, so the app "forgets" the user profile.
-    if (token) {
-      dispatch(fetchUserProfile()); // Fetch user profile using token
+    if (!token) {
+      hasFetchedProfile.current = false;
+      return;
     }
-  }, [dispatch]);
+
+    if (hasFetchedProfile.current) {
+      return;
+    }
+
+    hasFetchedProfile.current = true;
+    dispatch(fetchUserProfile());
+  }, [token, dispatch]);
 
   return (
     <>

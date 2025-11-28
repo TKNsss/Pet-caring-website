@@ -1,6 +1,7 @@
 import React from "react";
-import { services } from "../../../constants";
 import { useTranslation } from "react-i18next";
+import { services } from "../../../constants";
+import { sanitizeHtml } from "../../../utils/sanitizeHtml";
 
 const OurService = () => {
   const { t } = useTranslation();
@@ -11,7 +12,7 @@ const OurService = () => {
       <div className="px-[2.25rem] py-18">
         <h3
           className="text-center text-[30px] font-bold text-[#33363F]"
-          dangerouslySetInnerHTML={{ __html: localizedHeading }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(localizedHeading) }}
         />
 
         <div className="mt-10 grid w-full grid-cols-1 gap-[40px] sm:grid-cols-2 lg:grid-cols-3">

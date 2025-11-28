@@ -47,6 +47,17 @@ namespace Pet_caring_website
             if (string.IsNullOrEmpty(googleOptions.ClientId) || string.IsNullOrEmpty(googleOptions.ClientSecret))
                 throw new InvalidOperationException("Google credentials are missing in configuration.");
 
+            var emailConfig = builder.Configuration.GetSection("Email").Get<EmailSettings>()
+                ?? throw new InvalidOperationException("Email settings are missing.");
+
+            if (string.IsNullOrWhiteSpace(emailConfig.SmtpServer) ||
+                emailConfig.SmtpPort <= 0 ||
+                string.IsNullOrWhiteSpace(emailConfig.SmtpUser) ||
+                string.IsNullOrWhiteSpace(emailConfig.SmtpPassword))
+            {
+                throw new InvalidOperationException("Email SMTP settings are incomplete.");
+            }
+
             var superAdminEmails = builder.Configuration.GetSection("SuperAdmins").Get<List<string>>() ?? new List<string>();
 
             // ------------------------------------------------

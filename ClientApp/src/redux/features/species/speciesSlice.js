@@ -17,7 +17,9 @@ export const fetchSpecies = createAsyncThunk(
         return thunkAPI.rejectWithValue(response.data);
       }
     } catch (err) {
-      return thunkAPI.rejectWithValue(err);
+      return thunkAPI.rejectWithValue({
+        message: err?.message || "Unable to fetch species",
+      });
     }
   },
 );

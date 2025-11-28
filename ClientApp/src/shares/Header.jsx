@@ -1,6 +1,7 @@
-import React from "react";
 import { FaPaw } from "react-icons/fa";
 import RequestServiceBtn from "./RequestServiceBtn";
+import React from "react";
+import { sanitizeHtml } from "../utils/sanitizeHtml";
 
 const Header = ({ id, title, subTitle, headerImg, bgColor }) => {
   return (
@@ -32,12 +33,12 @@ const Header = ({ id, title, subTitle, headerImg, bgColor }) => {
               >
                 <h1
                   className={`mt-4 text-4xl ${["Whpc", "RequestService"].includes(id) ? "text-fourth" : "text-[#F1F1F1]"} @3xl:text-[55px] @5xl:mt-0`}
-                  dangerouslySetInnerHTML={{ __html: title }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(title) }}
                   data-testid={`header-title-${id}`}
                 />
                 <p
                   className={`font-Poppins ${id === "RequestService" ? "mt-12 lg:mt-15" : "mt-4 lg:mt-[30px] xl:mt-[30px]"} max-w-[715px] text-xl leading-[30px] ${["Whpc", "RequestService"].includes(id) ? "text-third" : "text-[#F1F1F1]"} lg:w-[46vw] lg:text-[23px]`}
-                  dangerouslySetInnerHTML={{ __html: subTitle }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(subTitle) }}
                 />
                 <div
                   className="mt-[8%] mb-[12%]"

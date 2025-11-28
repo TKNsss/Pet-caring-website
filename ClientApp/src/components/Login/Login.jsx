@@ -119,6 +119,8 @@ const Login = () => {
   const githubRedirectUri =
     import.meta.env.VITE_GITHUB_REDIRECT_URI ||
     `${window.location.origin}/auth/github/callback`;
+  const enableGoogleOneTap =
+    import.meta.env.VITE_ENABLE_GOOGLE_ONE_TAP === "true";
 
   const handleGitHubLogin = () => {
     if (!githubClientId) {
@@ -241,6 +243,7 @@ const Login = () => {
                   name="username"
                   value={formData.username}
                   required
+                  autoComplete="username"
                 />
               </div>
             )}
@@ -258,6 +261,7 @@ const Login = () => {
                 name="email"
                 value={formData.email}
                 required
+                autoComplete="email"
               />
             </div>
 
@@ -274,6 +278,7 @@ const Login = () => {
                 name="password"
                 value={formData.password}
                 required
+                autoComplete={isRegistering ? "new-password" : "current-password"}
               />
             </div>
 
@@ -294,6 +299,7 @@ const Login = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   required
+                  autoComplete="new-password"
                 />
               </div>
             )}
@@ -344,7 +350,7 @@ const Login = () => {
             <div className="flex w-full flex-col gap-3">
               <div className="flex w-full justify-center">
                 <GoogleLogin
-                  useOneTap // Enables One Tap - remember past user credential
+                  useOneTap={enableGoogleOneTap} // Enable via env to avoid FedCM errors locally
                   auto_select={false}
                   onSuccess={async (credentialResponse) => {
                     await handleGoogleLogin(credentialResponse);
